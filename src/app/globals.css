@@ -2,7 +2,14 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #5B4B49; /* brand-taupe */
+  
+  /* Brand Colors from CLAUDE.md */
+  --color-taupe: #5B4B49;
+  --color-pink: #DB93B0;
+  --color-blush: #F7BFB4;
+  --color-steel: #77A0A9;
+  --color-teal: #16697A;
 }
 
 @theme inline {
@@ -10,6 +17,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Brand Tokens */
+  --color-brand-taupe: var(--color-taupe);
+  --color-brand-pink: var(--color-pink);
+  --color-brand-blush: var(--color-blush);
+  --color-brand-steel: var(--color-steel);
+  --color-brand-teal: var(--color-teal);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,6 +35,6 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-taupe); /* Enforcing brand-taupe */
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
