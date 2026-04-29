@@ -19,8 +19,10 @@ export default function Sidebar({ userEmail }) {
 
   return (
     <aside className="w-64 bg-brand-teal text-white flex flex-col hidden md:flex fixed h-full border-r border-brand-steel/10">
-      <div className="h-20 flex items-center px-6 border-b border-brand-steel/10">
-        <Image src="/logo-academia.png" alt="Logo" width={32} height={32} className="mr-3" />
+      <div className="h-24 flex items-center px-6 border-b border-brand-steel/10">
+        <div className="bg-white p-2.5 rounded-2xl mr-3 shadow-sm border border-brand-steel/10 flex items-center justify-center">
+          <Image src="/logo-academia.png" alt="Logo" width={32} height={32} style={{ width: "auto", height: "auto" }} />
+        </div>
         <span className="text-xl font-extrabold tracking-tight">AcademIA</span>
       </div>
 

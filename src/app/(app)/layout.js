@@ -21,7 +21,7 @@ export default async function AppLayout({ children }) {
         {/* Mobile Header */}
         <header className="md:hidden h-16 bg-brand-teal text-white flex items-center justify-between px-6 border-b border-brand-steel/30 z-20 sticky top-0">
           <div className="flex items-center gap-2">
-            <Image src="/logo-academia.png" alt="Logo" width={24} height={24} />
+            <Image src="/logo-academia.png" alt="Logo" width={24} height={24} style={{ width: "auto", height: "auto" }} />
             <span className="text-xl font-black tracking-tight uppercase">AcademIA</span>
           </div>
           <div className="flex items-center gap-4">

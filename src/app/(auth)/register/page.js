@@ -7,7 +7,6 @@ import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
-import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -126,17 +125,6 @@ export default function RegisterPage() {
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Registrarse"}
             </button>
           </form>
-
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-400 font-medium uppercase tracking-wider">o registrarse con</span>
-            </div>
-          </div>
-
-          <GoogleLoginButton />
 
           <div className="mt-8 text-center border-t border-gray-100 pt-6">
             <p className="text-sm text-brand-taupe font-medium">
