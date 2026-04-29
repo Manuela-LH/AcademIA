@@ -1,33 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
-import { GraduationCap, Zap, MessageSquare, TrendingUp, ArrowRight, FileText, Brain, BookOpen, LineChart, Upload } from "lucide-react";
+import { Zap, MessageSquare, TrendingUp, ArrowRight, FileText, Brain, BookOpen, LineChart, Upload } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white font-sans">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full bg-white">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between max-w-6xl">
-          <div className="flex items-center gap-2">
-            <Image src="/logo-academia.png" alt="AcademIA Logo" width={40} height={40} style={{ width: "auto", height: "auto" }} className="rounded-md" />
-            <span className="text-2xl font-bold text-brand-teal tracking-tight">AcademIA</span>
-          </div>
-          <nav className="flex items-center gap-6">
-            <Link
-              href="/login"
-              className="text-sm font-bold text-brand-teal hover:text-[#0e4f5c] transition-colors"
-            >
-              Iniciar sesión
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm font-bold bg-brand-teal text-white px-5 py-2.5 rounded-md hover:bg-[#0e4f5c] transition-colors"
-            >
-              Crear cuenta
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="flex-1 flex flex-col">
         {/* Hero Section */}

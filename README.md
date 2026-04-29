@@ -1,11 +1,6 @@
 # AcademIA 
 ### Tu Tutor Personal Inteligente con RAG y Gemini 2.5 Flash
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database-3FCF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-4285F4?style=for-the-badge&logo=google-gemini)](https://aistudio.google.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-
 **AcademIA** es una plataforma educativa de vanguardia que transforma tus documentos de estudio (PDF, DOCX, TXT) en una base de conocimientos interactiva. Utilizando técnicas de **RAG (Retrieval-Augmented Generation)** y los modelos más avanzados de **Google Gemini**, AcademIA actúa como un tutor socrático que te ayuda a aprender, no solo a obtener respuestas.
 
 ---
@@ -69,8 +64,6 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 1. **Ingesta**: El texto de tus archivos se divide en fragmentos (*chunks*) y se almacena en la base de datos.
 2. **Contexto Masivo**: Cuando haces una pregunta, el sistema carga **TODO** el material de la materia activa.
 3. **Razonamiento Profundo**: Gracias a los **1.0M de tokens de contexto de Gemini 2.5 Flash**, la IA lee todos tus documentos simultáneamente para responder con una precisión superior, sin perder detalles por filtros de búsqueda.
-
-Para más detalles técnicos, consulta [LogicaDB.md](./LogicaDB.md).
 
 ---
 
