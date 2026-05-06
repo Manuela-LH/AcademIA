@@ -11,7 +11,7 @@ export default function Navbar({ showAuthButtons = true }) {
             alt="AcademIA Logo" 
             width={40} 
             height={40} 
-            style={{ width: "auto", height: "auto" }} 
+            style={{ width: "40px", height: "auto" }} 
             className="rounded-md" 
           />
           <span className="text-2xl font-bold text-brand-teal tracking-tight">AcademIA</span>

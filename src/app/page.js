@@ -120,7 +120,7 @@ export default function LandingPage() {
       <footer className="bg-white py-8 border-t border-gray-100">
         <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo-academia.png" alt="AcademIA Logo" width={24} height={24} style={{ width: "auto", height: "auto" }} className="rounded-sm" />
+            <Image src="/logo-academia.png" alt="AcademIA Logo" width={24} height={24} style={{ width: "24px", height: "auto" }} className="rounded-sm" />
             <span className="text-base font-bold text-brand-teal">Creadoras</span>
           </div>
           <div className="text-sm font-bold text-gray-400 flex gap-6">

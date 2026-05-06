@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Plus, Search, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ export default function DashboardPage() {
   const [deletingName, setDeletingName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchSubjects = async () => {
+  const fetchSubjects = useCallback(async () => {
     try {
       const res = await fetch("/api/subjects");
       const data = await res.json();
@@ -29,11 +29,12 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSubjects();
-  }, []);
+  }, [fetchSubjects]);
 
   const handleDeleteSubject = async (e, id, name) => {
     e.stopPropagation();
@@ -62,7 +63,7 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredSubjects = subjects.filter(s => 
+  const filteredSubjects = subjects.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -73,7 +74,7 @@ export default function DashboardPage() {
           <h1 className="text-4xl font-black text-brand-taupe tracking-tight">Mis Materias</h1>
           <p className="text-brand-steel font-medium text-lg mt-1">Gestiona tus áreas de estudio y documentos</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center justify-center gap-2 bg-brand-teal text-white px-8 py-4 rounded-2xl font-bold hover:bg-[#0e4f5c] transition-all shadow-lg shadow-brand-teal/20 hover:-translate-y-0.5 active:translate-y-0"
         >
@@ -84,11 +85,11 @@ export default function DashboardPage() {
       {/* Search Bar */}
       <div className="relative max-w-xl group">
         <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-brand-steel group-focus-within:text-brand-teal transition-colors" />
-        <input 
-          type="text" 
+        <input
+          type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar materia por nombre..." 
+          placeholder="Buscar materia por nombre..."
           className="w-full pl-14 pr-6 py-4 bg-white border border-brand-steel/10 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-teal/5 shadow-sm transition-all text-brand-taupe font-medium placeholder:text-brand-steel/50"
         />
       </div>
@@ -113,19 +114,19 @@ export default function DashboardPage() {
             {searchTerm ? "Intenta con otro término de búsqueda." : "Comienza creando tu primera materia para organizar tus documentos."}
           </p>
           {!searchTerm && (
-             <button 
-                onClick={() => setIsModalOpen(true)}
-                className="mt-8 text-brand-teal font-bold hover:underline"
-              >
-                Crear materia ahora
-              </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="mt-8 text-brand-teal font-bold hover:underline"
+            >
+              Crear materia ahora
+            </button>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredSubjects.map((subject) => (
-            <div 
-              key={subject.id} 
+            <div
+              key={subject.id}
               onClick={() => router.push(`/subjects/${subject.id}`)}
               className="group relative bg-white p-8 rounded-[2rem] border border-brand-steel/5 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer"
             >
@@ -142,25 +143,25 @@ export default function DashboardPage() {
                 )}
               </button>
 
-              <div 
+              <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mb-8 text-white shadow-lg"
                 style={{ backgroundColor: subject.color }}
               >
                 <BookOpen className="h-8 w-8" />
               </div>
-              
+
               <h3 className="text-2xl font-black text-brand-taupe mb-3 group-hover:text-brand-teal transition-colors tracking-tight">
                 {subject.name}
               </h3>
-              
+
               <div className="flex items-center gap-3 text-sm font-bold text-brand-steel/60">
-                <span className="bg-brand-blush/20 px-3 py-1 rounded-lg">Materia</span>
+                <span className="bg-brand-blush/20 px-3 py-1 rounded-lg truncate max-w-[200px]">{subject.description || "Sin descripción"}</span>
                 <span className="w-1 h-1 bg-brand-steel/30 rounded-full"></span>
                 <span suppressHydrationWarning>{new Date(subject.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
               </div>
-              
+
               <div className="mt-8 flex items-center text-brand-teal font-bold text-sm opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
-                Entrar a estudiar <Plus className="h-4 w-4 ml-1 rotate-45" />
+                Entrar a estudiar
               </div>
             </div>
           ))}

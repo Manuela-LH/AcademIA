@@ -31,7 +31,7 @@ export default function LoginPage() {
       }
 
       toast.success("¡Bienvenido de nuevo!");
-      router.push("/dashboard");
+      router.push("/subjects");
       router.refresh();
     } catch (err) {
       toast.error("Ocurrió un error inesperado.");
