@@ -68,7 +68,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
+    <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-brand-taupe tracking-tight">Mis Materias</h1>

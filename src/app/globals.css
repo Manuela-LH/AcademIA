@@ -38,3 +38,19 @@ body {
   color: var(--color-taupe); /* Enforcing brand-taupe */
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #77A0A940;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #77A0A960;
+  }
+}

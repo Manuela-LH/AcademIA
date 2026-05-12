@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const supabase = createClient();
   
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -38,6 +39,9 @@ export default function RegisterPage() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            full_name: fullName,
+          }
         }
       });
 
@@ -69,6 +73,22 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleRegister} className="space-y-5">
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-bold text-brand-taupe mb-1.5">
+                Nombre Completo
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 border border-brand-steel/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-teal/50 transition-all font-medium"
+                placeholder="Tu Nombre"
+              />
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-bold text-brand-taupe mb-1.5">
                 Correo Electrónico
