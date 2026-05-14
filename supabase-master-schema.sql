@@ -61,8 +61,10 @@ CREATE TABLE IF NOT EXISTS quizzes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   subject_id UUID NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-  questions_json JSONB NOT NULL,  
-  score NUMERIC(5,2),             
+  name TEXT,
+  questions_json JSONB NOT NULL,
+  user_answers JSONB,
+  score NUMERIC(5,2),
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

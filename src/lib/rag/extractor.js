@@ -1,7 +1,7 @@
 // Force Node.js runtime — needed for pdf-parse and mammoth (CJS modules)
 export const runtime = "nodejs";
 
-import { analyzeImage } from "@/lib/gemini/client";
+import { analyzeImage, analyzeDocument } from "@/lib/gemini/client";
 
 export async function extractTextFromFile(file, apiKey = null) {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -39,21 +39,31 @@ export async function extractTextFromFile(file, apiKey = null) {
 
   // --- PDF ---
   if (mimeType === "application/pdf" || fileName.endsWith(".pdf")) {
-    // pdf-parse v1.1.1: bypass the package entry point (which tries to read a test
-    // file at startup and breaks in Next.js) by calling the internal parser directly.
     try {
+      console.log(`[Extractor] Attempting to parse PDF with pdf-parse...`);
       const { createRequire } = await import("module");
       const req = createRequire(import.meta.url);
       const PDFParser = req("pdf-parse/lib/pdf-parse.js");
       const data = await PDFParser(buffer);
-      console.log(`[Extractor] PDF extracted: ${data.text.length} chars`);
-      return data.text;
+      
+      // Si el parser devuelve texto válido y extenso, lo usamos.
+      // Si el PDF es escaneado o tiene muy poco texto (ej. < 50 chars), usamos Gemini.
+      if (data && data.text && data.text.trim().length > 50) {
+        console.log(`[Extractor] PDF extracted: ${data.text.length} chars via pdf-parse`);
+        return data.text;
+      } else {
+        console.log(`[Extractor] pdf-parse devolvió texto insuficiente (${data?.text?.length || 0} chars). Usando Gemini Fallback...`);
+      }
     } catch (e) {
-      console.error("[Extractor] pdf-parse error:", e.message);
-      throw new Error(
-        `No se pudo leer el PDF: ${e.message}. Intenta subir el archivo como .txt o .docx.`
-      );
+      console.warn("[Extractor] pdf-parse error, fallback to Gemini:", e.message);
     }
+
+    // Fallback: Usar Gemini para PDFs escaneados o problemáticos
+    if (!apiKey) {
+      throw new Error("Se requiere una API Key de Gemini para procesar este PDF (parece ser un documento escaneado o complejo).");
+    }
+    console.log(`[Extractor] Processing PDF with Gemini Fallback: ${fileName}`);
+    return await analyzeDocument(buffer, mimeType, apiKey);
   }
 
   // --- PPT / PPTX ---

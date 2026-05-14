@@ -157,7 +157,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3 text-sm font-bold text-brand-steel/60">
                 <span className="bg-brand-blush/20 px-3 py-1 rounded-lg truncate max-w-[200px]">{subject.description || "Sin descripción"}</span>
                 <span className="w-1 h-1 bg-brand-steel/30 rounded-full"></span>
-                <span suppressHydrationWarning>{new Date(subject.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                <span suppressHydrationWarning>{typeof window !== 'undefined' ? new Date(subject.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}</span>
               </div>
 
               <div className="mt-8 flex items-center text-brand-teal font-bold text-sm opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">

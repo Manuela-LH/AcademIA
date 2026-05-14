@@ -47,9 +47,13 @@ export async function POST(req) {
     console.log(`[Upload Debug] Chunks generados: ${chunks.length}`);
 
     if (chunks.length === 0) {
-      return NextResponse.json({ error: "No se pudo extraer texto válido del documento." }, { status: 400 });
+      return NextResponse.json({ 
+        error: `No se pudo extraer texto válido del documento. (Texto extraído: ${text?.length || 0} caracteres)`,
+        textPreview: text ? text.substring(0, 100) : "Nulo"
+      }, { status: 400 });
     }
 
+    console.log(`[Upload Debug] Insertando documento en BD para subjectId: ${subjectId}`);
     const { data: docData, error: docError } = await supabase
       .from('documents')
       .insert({
@@ -64,9 +68,16 @@ export async function POST(req) {
       .single();
 
     if (docError) {
-      console.error(docError);
-      return NextResponse.json({ error: "Error al registrar el documento en la base de datos." }, { status: 500 });
+      console.error("[Upload Debug] Error insertando documento:", docError);
+      return NextResponse.json({ error: `Error al registrar el documento: ${docError.message}` }, { status: 500 });
     }
+
+    if (!docData) {
+      console.error("[Upload Debug] No se devolvieron datos tras la inserción del documento.");
+      return NextResponse.json({ error: "Error: No se pudo recuperar el documento insertado. Verifica las políticas RLS." }, { status: 500 });
+    }
+
+    console.log(`[Upload Debug] Documento registrado con ID: ${docData.id}`);
 
     // 5. Guardar los chunks (Sin embeddings - Long Context RAG)
     const chunksToInsert = chunks.map((chunkContent, i) => ({
@@ -77,6 +88,7 @@ export async function POST(req) {
       chunk_index: i
     }));
 
+    console.log(`[Upload Debug] Insertando ${chunksToInsert.length} chunks...`);
     const { error: chunksError } = await supabase
       .from('document_chunks')
       .insert(chunksToInsert);
@@ -95,7 +107,7 @@ export async function POST(req) {
   } catch (error) {
     console.error("Upload API Error:", error);
     return NextResponse.json(
-      { error: "Error interno procesando el documento" },
+      { error: `Error interno: ${error.message}` },
       { status: 500 }
     );
   }

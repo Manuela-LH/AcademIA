@@ -25,10 +25,17 @@ export const STUDY_TECHNIQUES = {
 };
 
 export const QUIZ_GENERATION_PROMPT = `
-Basándote EXCLUSIVAMENTE en el siguiente material de estudio, genera {count} preguntas de opción múltiple.
+Basándote EXCLUSIVAMENTE en el siguiente material de estudio, genera un cuestionario de evaluación.
 
 MATERIAL:
 {context}
+
+CANTIDAD DE PREGUNTAS:
+El número de preguntas debe ser proporcional a la cantidad de material disponible:
+- 1-2 documentos o poco contenido: genera 3-4 preguntas
+- 3-5 documentos o contenido moderado: genera 5-6 preguntas
+- 6+ documentos o mucho contenido: genera 7-10 preguntas
+- Ajusta según la densidad y complejidad del contenido
 
 Devuelve un JSON válido con este formato exacto:
 {

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, FileText, Loader2, Trash2, Info, Key } from "lucide-react";
 import { toast } from "sonner";
@@ -35,7 +35,7 @@ export default function SubjectChatPage({ params }) {
 
   const supabase = createClient();
 // ... (fetchData and handleDeleteDoc stay the same)
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.user_metadata?.gemini_api_key) {
@@ -52,11 +52,11 @@ export default function SubjectChatPage({ params }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [subjectId, supabase]);
 
   useEffect(() => {
     fetchData();
-  }, [subjectId]);
+  }, [fetchData]);
 
   const [deletingDocId, setDeletingDocId] = useState(null);
   const [deletingDocName, setDeletingDocName] = useState("");
@@ -250,9 +250,12 @@ export default function SubjectChatPage({ params }) {
                 <BookOpen className="h-5 w-5 text-brand-teal" />
               </div>
             </div>
-            <button disabled className="w-full bg-brand-steel/10 text-brand-steel/60 font-semibold py-2 rounded-lg text-xs cursor-not-allowed">
-              Próximamente
-            </button>
+            <Link 
+              href={`/subjects/${subjectId}/quizzes`}
+              className="w-full bg-brand-teal text-white font-semibold py-2 rounded-lg text-xs text-center hover:bg-[#0e4f5c] transition-colors"
+            >
+              Ver Cuestionarios
+            </Link>
           </div>
         </div>
 

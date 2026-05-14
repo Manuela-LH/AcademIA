@@ -25,7 +25,7 @@ export default function DeleteConfirmModal({
           <h2 className="text-xl font-black text-brand-taupe text-center mb-2">{title}</h2>
           <p className="text-brand-steel text-center text-sm mb-6">
             {documentName ? (
-              <>Estás a punto de eliminar <strong>"{documentName}"</strong>. {message}</>
+              <>Estás a punto de eliminar <strong>&quot;{documentName}&quot;</strong>. {message}</>
             ) : message}
           </p>
 

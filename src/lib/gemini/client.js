@@ -77,6 +77,54 @@ export const analyzeImage = async (buffer, mimeType, apiKey) => {
   throw new Error(`No se pudo procesar la imagen tras varios intentos. Último error: ${lastError?.message}`);
 };
 
+/**
+ * Analiza un documento (PDF, etc.) usando Gemini.
+ */
+export const analyzeDocument = async (buffer, mimeType, apiKey) => {
+  const genAI = getGeminiClient(apiKey);
+  
+  const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+  
+  const prompt = `
+    Eres un experto en extracción de información académica. 
+    Analiza este documento detalladamente:
+    1. Extrae TODO el texto de forma clara, manteniendo la estructura original en párrafos y listas.
+    2. Si hay imágenes, diagramas o tablas incrustadas en el documento, describe su contenido y su relación con el texto.
+    3. Asegúrate de no omitir información importante, ya que se usará para generar cuestionarios y tutorías.
+    
+    Solo devuelve el contenido estructurado, sin introducciones ni saludos.
+  `;
+
+  let lastError = null;
+
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`[Gemini] Intentando analizar documento con: ${modelName}`);
+      const model = genAI.getGenerativeModel({ model: modelName });
+
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: buffer.toString("base64"),
+            mimeType: "application/pdf",
+          },
+        },
+      ]);
+
+      const response = await result.response;
+      const text = response.text();
+      console.log(`[Gemini] Análisis de documento exitoso con: ${modelName}`);
+      return text;
+    } catch (error) {
+      lastError = error;
+      console.warn(`[Gemini] El modelo ${modelName} falló: ${error.message}. Probando siguiente si está disponible...`);
+    }
+  }
+
+  throw new Error(`No se pudo procesar el documento tras varios intentos. Último error: ${lastError?.message}`);
+};
+
 export const validateApiKey = async (apiKey) => {
   const genAI = getGeminiClient(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -90,4 +138,26 @@ export const validateApiKey = async (apiKey) => {
   } catch (e) {
     throw e;
   }
+};
+
+export const generateContentWithFallback = async (prompt, generationConfig, apiKey) => {
+  const genAI = getGeminiClient(apiKey);
+  const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash"];
+  let lastError = null;
+
+  for (const modelName of modelsToTry) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig
+      });
+      return result.response;
+    } catch (error) {
+      lastError = error;
+      console.warn(`[generateContent] El modelo ${modelName} falló: ${error.message}. Probando siguiente...`);
+    }
+  }
+
+  throw new Error(`No se pudo generar contenido. Último error: ${lastError?.message}`);
 };
