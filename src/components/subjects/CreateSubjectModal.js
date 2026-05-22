@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,11 +9,23 @@ const PRESET_COLORS = [
   "#8E7C68", "#546A7B", "#6B4D57", "#4A5D23"
 ];
 
-export default function CreateSubjectModal({ isOpen, onClose, onSuccess }) {
+export default function CreateSubjectModal({ isOpen, onClose, onSuccess, editingSubject }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (editingSubject) {
+      setName(editingSubject.name || "");
+      setDescription(editingSubject.description || "");
+      setColor(editingSubject.color || PRESET_COLORS[0]);
+    } else {
+      setName("");
+      setDescription("");
+      setColor(PRESET_COLORS[0]);
+    }
+  }, [editingSubject, isOpen]);
 
   if (!isOpen) return null;
 
@@ -23,23 +35,30 @@ export default function CreateSubjectModal({ isOpen, onClose, onSuccess }) {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/subjects", {
-        method: "POST",
+      const url = "/api/subjects";
+      const method = editingSubject ? "PUT" : "POST";
+      const body = { name, description, color };
+      if (editingSubject) body.id = editingSubject.id;
+
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, color }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || "Error al crear la materia");
+      if (!response.ok) throw new Error(data.error || `Error al ${editingSubject ? 'actualizar' : 'crear'} la materia`);
 
-      toast.success("¡Materia creada con éxito!");
+      toast.success(`¡Materia ${editingSubject ? 'actualizada' : 'creada'} con éxito!`);
       onSuccess(data);
       onClose();
-      // Limpiar campos
-      setName("");
-      setDescription("");
-      setColor(PRESET_COLORS[0]);
+      // Limpiar campos solo si es creación
+      if (!editingSubject) {
+        setName("");
+        setDescription("");
+        setColor(PRESET_COLORS[0]);
+      }
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -51,7 +70,9 @@ export default function CreateSubjectModal({ isOpen, onClose, onSuccess }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-taupe/40 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in duration-300 border border-brand-steel/10">
         <div className="flex items-center justify-between p-6 border-b border-brand-steel/10">
-          <h2 className="text-2xl font-black text-brand-taupe tracking-tight">Nueva Materia</h2>
+          <h2 className="text-2xl font-black text-brand-taupe tracking-tight">
+            {editingSubject ? "Editar Materia" : "Nueva Materia"}
+          </h2>
           <button onClick={onClose} className="p-2 hover:bg-brand-blush/20 rounded-xl transition-colors group">
             <X className="h-6 w-6 text-brand-steel group-hover:text-brand-taupe" />
           </button>
@@ -109,7 +130,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onSuccess }) {
               type="submit"
               className="flex-1 py-4 bg-brand-teal text-white font-bold rounded-xl hover:bg-[#0e4f5c] transition-colors shadow-lg shadow-brand-teal/20 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Crear Materia"}
+              {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingSubject ? "Guardar Cambios" : "Crear Materia")}
             </button>
           </div>
         </form>

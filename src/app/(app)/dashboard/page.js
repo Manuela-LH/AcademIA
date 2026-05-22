@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { Loader2, LayoutDashboard, MessageSquare, CheckCircle, Clock, Target, Hash, BarChart3 } from "lucide-react";
+import { Loader2, LayoutDashboard, MessageSquare, CheckCircle, Clock, Target, Hash, BarChart3, TrendingUp, Layers } from "lucide-react";
 import { toast } from "sonner";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 
 function formatTime(seconds) {
   if (!seconds || seconds <= 0) return "0 min";
@@ -21,14 +21,8 @@ function formatTime(seconds) {
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalQuizzes: 0,
-    completedQuizzes: 0,
-    averageScore: 0,
-    totalQuizTime: 0,
-    totalChatTime: 0,
-    subjectStats: []
-  });
+  const [rawData, setRawData] = useState({ subjects: [], quizzes: [], chatSessions: [] });
+  const [selectedSubjectId, setSelectedSubjectId] = useState("all");
   
   const router = useRouter();
   const supabase = createClient();
@@ -59,47 +53,15 @@ export default function DashboardPage() {
 
         const { data: chatSessions, error: chatError } = await supabase
           .from("chat_sessions")
-          .select("time_spent_seconds")
+          .select("time_spent_seconds, subject_id")
           .eq("user_id", user.id);
 
         if (chatError) throw chatError;
 
-        // Calcular estadísticas de quizzes
-        const totalQuizzes = quizzes?.length || 0;
-        const completedQuizzesList = quizzes?.filter(q => q.completed_at) || [];
-        const completedQuizzes = completedQuizzesList.length;
-        
-        const quizzesWithScore = quizzes?.filter(q => q.score != null) || [];
-        const sumScore = quizzesWithScore.reduce((acc, q) => acc + Number(q.score), 0);
-        const averageScore = quizzesWithScore.length > 0 ? (sumScore / quizzesWithScore.length).toFixed(1) : 0;
-        
-        const totalQuizTime = quizzes?.reduce((acc, q) => acc + (q.time_spent_seconds || 0), 0) || 0;
-        
-        // Calcular dominio por materia
-        const subjectStats = subjects?.map(sub => {
-          const subjectQuizzes = quizzesWithScore.filter(q => q.subject_id === sub.id);
-          if (subjectQuizzes.length === 0) return null;
-          
-          const sum = subjectQuizzes.reduce((acc, q) => acc + Number(q.score), 0);
-          const avg = Math.round(sum / subjectQuizzes.length);
-          
-          return {
-            name: sub.name,
-            score: avg,
-            fill: sub.color || "#16697A", // Usa el color de la materia o brand-teal
-          };
-        }).filter(Boolean).sort((a, b) => b.score - a.score) || [];
-        
-        // Calcular estadísticas de chat
-        const totalChatTime = chatSessions?.reduce((acc, session) => acc + (session.time_spent_seconds || 0), 0) || 0;
-
-        setStats({
-          totalQuizzes,
-          completedQuizzes,
-          averageScore: Number(averageScore),
-          totalQuizTime,
-          totalChatTime,
-          subjectStats
+        setRawData({
+          subjects: subjects || [],
+          quizzes: quizzes || [],
+          chatSessions: chatSessions || []
         });
 
       } catch (error) {
@@ -113,6 +75,61 @@ export default function DashboardPage() {
     fetchStats();
   }, [router, supabase]);
 
+  // Derivación de datos según el filtro
+  const filteredQuizzes = selectedSubjectId === "all" 
+    ? rawData.quizzes 
+    : rawData.quizzes.filter(q => q.subject_id === selectedSubjectId);
+
+  const filteredChatSessions = selectedSubjectId === "all"
+    ? rawData.chatSessions
+    : rawData.chatSessions.filter(c => c.subject_id === selectedSubjectId);
+
+  // Rendimiento Quizzes
+  const totalQuizzes = filteredQuizzes.length;
+  const completedQuizzesList = filteredQuizzes.filter(q => q.completed_at);
+  const completedQuizzes = completedQuizzesList.length;
+  const quizzesWithScore = filteredQuizzes.filter(q => q.score != null);
+  const sumScore = quizzesWithScore.reduce((acc, q) => acc + Number(q.score), 0);
+  const averageScore = quizzesWithScore.length > 0 ? (sumScore / quizzesWithScore.length).toFixed(1) : 0;
+  const totalQuizTime = filteredQuizzes.reduce((acc, q) => acc + (q.time_spent_seconds || 0), 0);
+  const totalChatTime = filteredChatSessions.reduce((acc, c) => acc + (c.time_spent_seconds || 0), 0);
+
+  // Evolución de Puntajes (Line Chart)
+  const evolutionData = [...completedQuizzesList]
+    .sort((a, b) => new Date(a.completed_at) - new Date(b.completed_at))
+    .map(q => ({
+      date: new Date(q.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      score: Number(q.score),
+      name: q.name || "Quiz"
+    }));
+
+  // Tiempo de Estudio (Stacked Bar Chart)
+  const timeDataBySubject = (selectedSubjectId === "all" ? rawData.subjects : rawData.subjects.filter(s => s.id === selectedSubjectId))
+    .map(sub => {
+      const subQuizzes = filteredQuizzes.filter(q => q.subject_id === sub.id);
+      const subChats = filteredChatSessions.filter(c => c.subject_id === sub.id);
+      const quizTime = subQuizzes.reduce((acc, q) => acc + (q.time_spent_seconds || 0), 0);
+      const chatTime = subChats.reduce((acc, c) => acc + (c.time_spent_seconds || 0), 0);
+      return {
+        name: sub.name,
+        "Quizzes": Math.round(quizTime / 60),
+        "Chat IA": Math.round(chatTime / 60)
+      };
+    }).filter(s => s["Quizzes"] > 0 || s["Chat IA"] > 0);
+
+  // Dominio por materia
+  const subjectStats = (selectedSubjectId === "all" ? rawData.subjects : rawData.subjects.filter(s => s.id === selectedSubjectId))
+    .map(sub => {
+      const subjectQuizzes = quizzesWithScore.filter(q => q.subject_id === sub.id);
+      if (subjectQuizzes.length === 0) return null;
+      const sum = subjectQuizzes.reduce((acc, q) => acc + Number(q.score), 0);
+      return {
+        name: sub.name,
+        score: Math.round(sum / subjectQuizzes.length),
+        fill: sub.color || "#16697A"
+      };
+    }).filter(Boolean).sort((a, b) => b.score - a.score);
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -124,9 +141,21 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 animate-in fade-in duration-500">
-      <div className="flex items-center gap-3 mb-10">
-        <LayoutDashboard className="h-8 w-8 text-brand-teal" />
-        <h1 className="text-3xl md:text-4xl font-black text-brand-taupe">Dashboard de Estudio</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+        <div className="flex items-center gap-3">
+          <LayoutDashboard className="h-8 w-8 text-brand-teal" />
+          <h1 className="text-3xl md:text-4xl font-black text-brand-taupe">Dashboard de Estudio</h1>
+        </div>
+        <select
+          value={selectedSubjectId}
+          onChange={(e) => setSelectedSubjectId(e.target.value)}
+          className="bg-white border border-brand-steel/20 text-brand-taupe text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal block w-full sm:w-auto p-3 shadow-sm font-bold cursor-pointer"
+        >
+          <option value="all">Todas las materias</option>
+          {rawData.subjects.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="space-y-12">
@@ -140,37 +169,124 @@ export default function DashboardPage() {
             <StatCard 
               icon={<Hash className="h-6 w-6 text-brand-teal" />}
               title="Total Realizados"
-              value={stats.totalQuizzes}
+              value={totalQuizzes}
             />
             <StatCard 
               icon={<CheckCircle className="h-6 w-6 text-brand-teal" />}
               title="Completados"
-              value={stats.completedQuizzes}
+              value={completedQuizzes}
             />
             <StatCard 
               icon={<Target className="h-6 w-6 text-brand-teal" />}
               title="Puntuación Media"
-              value={`${stats.averageScore}%`}
+              value={`${averageScore}%`}
             />
             <StatCard 
               icon={<Clock className="h-6 w-6 text-brand-teal" />}
               title="Tiempo en Quizzes"
-              value={formatTime(stats.totalQuizTime)}
+              value={formatTime(totalQuizTime)}
             />
           </div>
         </section>
 
+        {/* Gráficos Principales */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Evolución de Puntajes */}
+          {evolutionData.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-6">
+                <TrendingUp className="h-6 w-6 text-brand-teal" />
+                <h2 className="text-2xl font-bold text-brand-taupe">Evolución de Puntajes</h2>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={evolutionData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: "#77A0A9", fontSize: 12 }} 
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: "#77A0A9", fontSize: 12 }} 
+                      domain={[0, 100]}
+                      dx={-10}
+                    />
+                    <Tooltip
+                      cursor={{ stroke: "#16697A", strokeWidth: 1, strokeDasharray: "3 3" }}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+                      labelStyle={{ fontWeight: 'bold', color: '#5B4B49', marginBottom: '4px' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="score" 
+                      name="Puntaje" 
+                      stroke="#16697A" 
+                      strokeWidth={3} 
+                      dot={{ fill: "#16697A", strokeWidth: 2, r: 4 }} 
+                      activeDot={{ r: 6, fill: "#DB93B0", stroke: "#fff" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+          )}
+
+          {/* Tiempo de Estudio (Stacked Bar) */}
+          {timeDataBySubject.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-6">
+                <Layers className="h-6 w-6 text-brand-teal" />
+                <h2 className="text-2xl font-bold text-brand-taupe">Tiempo de Estudio</h2>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={timeDataBySubject} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: "#77A0A9", fontSize: 12 }} 
+                      dy={10}
+                      angle={timeDataBySubject.length > 3 ? -30 : 0}
+                      textAnchor={timeDataBySubject.length > 3 ? "end" : "middle"}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: "#77A0A9", fontSize: 12 }} 
+                      dx={-10}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "#77A0A910" }}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                    <Bar dataKey="Chat IA" stackId="a" fill="#16697A" radius={[0, 0, 4, 4]} maxBarSize={50} />
+                    <Bar dataKey="Quizzes" stackId="a" fill="#DB93B0" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+          )}
+        </div>
+
         {/* Dominio por Materia */}
-        {stats.subjectStats.length > 0 && (
+        {subjectStats.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-6">
               <BarChart3 className="h-6 w-6 text-brand-teal" />
               <h2 className="text-2xl font-bold text-brand-taupe">Dominio por Materia</h2>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[400px]">
+            <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={stats.subjectStats}
+                  data={subjectStats}
                   margin={{ top: 20, right: 30, left: 0, bottom: 40 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
@@ -195,7 +311,7 @@ export default function DashboardPage() {
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
                   />
                   <Bar dataKey="score" radius={[6, 6, 0, 0]} maxBarSize={60}>
-                    {stats.subjectStats.map((entry, index) => (
+                    {subjectStats.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Bar>
@@ -215,7 +331,7 @@ export default function DashboardPage() {
             <StatCard 
               icon={<Clock className="h-6 w-6 text-brand-teal" />}
               title="Tiempo Total en Chat"
-              value={formatTime(stats.totalChatTime)}
+              value={formatTime(totalChatTime)}
             />
           </div>
         </section>

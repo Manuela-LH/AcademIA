@@ -61,6 +61,42 @@ export async function POST(req) {
   }
 }
 
+export async function PUT(req) {
+  try {
+    const { id, name, description, color } = await req.json();
+
+    if (!id || !name) {
+      return NextResponse.json({ error: "ID y nombre son obligatorios" }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const { data, error } = await supabase
+      .from("subjects")
+      .update({
+        name,
+        description,
+        color: color || "#16697A"
+      })
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);

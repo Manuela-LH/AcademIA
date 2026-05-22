@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Plus, Search, Loader2, Trash2 } from "lucide-react";
+import { BookOpen, Plus, Search, Loader2, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import CreateSubjectModal from "@/components/subjects/CreateSubjectModal";
 import DeleteConfirmModal from "@/components/documents/DeleteConfirmModal";
@@ -16,6 +16,18 @@ export default function DashboardPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [deletingName, setDeletingName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingSubject, setEditingSubject] = useState(null);
+
+  const openCreateModal = () => {
+    setEditingSubject(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (e, subject) => {
+    e.stopPropagation();
+    setEditingSubject(subject);
+    setIsModalOpen(true);
+  };
 
   const fetchSubjects = useCallback(async () => {
     try {
@@ -75,7 +87,7 @@ export default function DashboardPage() {
           <p className="text-brand-steel font-medium text-lg mt-1">Gestiona tus áreas de estudio y documentos</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={openCreateModal}
           className="flex items-center justify-center gap-2 bg-brand-teal text-white px-8 py-4 rounded-2xl font-bold hover:bg-[#0e4f5c] transition-all shadow-lg shadow-brand-teal/20 hover:-translate-y-0.5 active:translate-y-0"
         >
           <Plus className="h-6 w-6" /> Nueva Materia
@@ -115,7 +127,7 @@ export default function DashboardPage() {
           </p>
           {!searchTerm && (
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={openCreateModal}
               className="mt-8 text-brand-teal font-bold hover:underline"
             >
               Crear materia ahora
@@ -130,18 +142,27 @@ export default function DashboardPage() {
               onClick={() => router.push(`/subjects/${subject.id}`)}
               className="group relative bg-white p-8 rounded-[2rem] border border-brand-steel/5 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer"
             >
-              <button
-                type="button"
-                onClick={(e) => handleDeleteSubject(e, subject.id, subject.name)}
-                disabled={deletingId === subject.id}
-                className="absolute top-6 right-6 p-2.5 text-brand-steel/40 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all z-10 opacity-0 group-hover:opacity-100"
-              >
-                {deletingId === subject.id ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-5 w-5" />
-                )}
-              </button>
+              <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all z-10">
+                <button
+                  type="button"
+                  onClick={(e) => openEditModal(e, subject)}
+                  className="p-2.5 text-brand-steel/40 hover:text-brand-teal hover:bg-brand-teal/10 rounded-xl transition-all"
+                >
+                  <Pencil className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteSubject(e, subject.id, subject.name)}
+                  disabled={deletingId === subject.id}
+                  className="p-2.5 text-brand-steel/40 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                >
+                  {deletingId === subject.id ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
 
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mb-8 text-white shadow-lg"
@@ -172,6 +193,7 @@ export default function DashboardPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={fetchSubjects}
+        editingSubject={editingSubject}
       />
 
       <DeleteConfirmModal
