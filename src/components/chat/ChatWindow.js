@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Settings2, Loader2, Sparkles } from "lucide-react";
 import MessageBubble from "./MessageBubble";
+import useActiveTimer from "@/hooks/useActiveTimer";
 
 // Constantes basadas en CLAUDE.md
 const TECHNIQUES = [
@@ -25,6 +26,77 @@ export default function ChatWindow({ subjectId, hasApiKey, technique, setTechniq
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
+  const [sessionId, setSessionId] = useState(null);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  const { getTotalSeconds, setInitialElapsed, startInterval } = useActiveTimer({
+    showDisplay: false,
+    autoStart: false
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    async function initSession() {
+      try {
+        const res = await fetch("/api/chat/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subjectId })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!mounted) return;
+          setSessionId(data.sessionId);
+          if (data.time_spent_seconds > 0) {
+            setInitialElapsed(data.time_spent_seconds * 1000);
+          }
+        }
+      } catch (err) {
+        console.error("Error initializing chat session:", err);
+      }
+    }
+    initSession();
+    return () => { mounted = false; };
+  }, [subjectId, setInitialElapsed]);
+
+  useEffect(() => {
+    if (!sessionId || !hasStarted) return;
+    const interval = setInterval(() => {
+      fetch("/api/chat/session", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, timeSpentSeconds: getTotalSeconds() })
+      }).catch(err => console.error("Periodic session save error:", err));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [sessionId, hasStarted, getTotalSeconds]);
+
+  useEffect(() => {
+    if (!sessionId || !hasStarted) return;
+    const handleBeforeUnload = () => {
+      fetch("/api/chat/session", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({ sessionId, timeSpentSeconds: getTotalSeconds() })
+      });
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [sessionId, hasStarted, getTotalSeconds]);
+
+  useEffect(() => {
+    if (!sessionId || !hasStarted) return;
+    return () => {
+      fetch("/api/chat/session", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({ sessionId, timeSpentSeconds: getTotalSeconds() })
+      }).catch(err => console.error("Unmount session save error:", err));
+    };
+  }, [sessionId, hasStarted, getTotalSeconds]);
+
   // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,6 +108,11 @@ export default function ChatWindow({ subjectId, hasApiKey, technique, setTechniq
     if (!hasApiKey) {
       if (onRequestApiKey) onRequestApiKey();
       return;
+    }
+
+    if (!hasStarted) {
+      startInterval();
+      setHasStarted(true);
     }
 
     const userMsg = { id: Date.now().toString(), role: "user", content: input };
@@ -92,6 +169,13 @@ export default function ChatWindow({ subjectId, hasApiKey, technique, setTechniq
       );
     } finally {
       setIsTyping(false);
+      if (sessionId) {
+        fetch("/api/chat/session", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, timeSpentSeconds: getTotalSeconds() })
+        }).catch(err => console.error("Save on message error:", err));
+      }
     }
   };
 

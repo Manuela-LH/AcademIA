@@ -1,83 +1,12 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-
-function useActiveTimer() {
-  const startTimeRef = useRef(null);
-  const elapsedMsRef = useRef(0);
-  const intervalIdRef = useRef(null);
-  const [displayTime, setDisplayTime] = useState("00:00");
-
-  const updateDisplay = (totalMs) => {
-    const totalSeconds = Math.floor(totalMs / 1000);
-    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-    const s = (totalSeconds % 60).toString().padStart(2, '0');
-    setDisplayTime(`${m}:${s}`);
-  };
-
-  const setInitialElapsed = (ms) => {
-    elapsedMsRef.current = ms;
-    updateDisplay(ms);
-  };
-
-  const startInterval = () => {
-    if (intervalIdRef.current) clearInterval(intervalIdRef.current);
-    startTimeRef.current = performance.now();
-    intervalIdRef.current = setInterval(() => {
-      const currentElapsed = elapsedMsRef.current + (performance.now() - startTimeRef.current);
-      updateDisplay(currentElapsed);
-    }, 1000);
-  };
-
-  const stopInterval = () => {
-    if (intervalIdRef.current) {
-      clearInterval(intervalIdRef.current);
-      intervalIdRef.current = null;
-      elapsedMsRef.current += performance.now() - startTimeRef.current;
-    }
-  };
-
-  useEffect(() => {
-    startTimeRef.current = performance.now();
-    startInterval();
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) stopInterval();
-      else startInterval();
-    };
-
-    const handleFocus = () => {
-      if (!intervalIdRef.current && !document.hidden) startInterval();
-    };
-
-    const handleBlur = () => stopInterval();
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("blur", handleBlur);
-
-    return () => {
-      stopInterval();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("blur", handleBlur);
-    };
-  }, []);
-
-  const getTotalSeconds = () => {
-    const totalMs = intervalIdRef.current && startTimeRef.current
-      ? elapsedMsRef.current + (performance.now() - startTimeRef.current)
-      : elapsedMsRef.current;
-    return Math.floor(totalMs / 1000);
-  };
-
-  return { displayTime, getTotalSeconds, setInitialElapsed };
-}
+import useActiveTimer from "@/hooks/useActiveTimer";
 
 export default function QuizPlayPage({ params }) {
   const resolvedParams = use(params);
