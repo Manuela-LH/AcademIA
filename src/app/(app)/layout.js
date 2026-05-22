@@ -16,7 +16,7 @@ export default async function AppLayout({ children }) {
 
       {/* Main Content Area */}
       <main className="flex-1 relative overflow-hidden">
-        <div className="h-full w-full p-4 md:p-6">
+        <div className="h-full w-full overflow-y-auto custom-scrollbar p-4 md:p-6">
           {children}
         </div>
       </main>

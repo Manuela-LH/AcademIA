@@ -67,13 +67,13 @@ export default function AppNavbar({ user }) {
             <BookOpen className="h-4 w-4" />
             Mis Materias
           </Link>
-          <button 
-            className="flex items-center gap-2 text-sm font-bold text-brand-steel hover:text-brand-teal transition-colors"
-            onClick={() => {}}
+          <Link 
+            href="/dashboard"
+            className="flex items-center gap-2 text-sm font-bold text-brand-taupe hover:text-brand-teal transition-colors"
           >
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
-          </button>
+          </Link>
         </nav>
 
         {/* Right Section: User Profile Dropdown */}
@@ -108,13 +108,14 @@ export default function AppNavbar({ user }) {
                   <BookOpen className="h-4 w-4" />
                   Mis Materias
                 </Link>
-                <button 
+                <Link 
+                  href="/dashboard"
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-brand-taupe hover:bg-brand-blush/20 hover:text-brand-teal rounded-lg transition-colors"
                   onClick={() => setIsDropdownOpen(false)}
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
-                </button>
+                </Link>
               </div>
 
               <div className="px-1 space-y-1">
