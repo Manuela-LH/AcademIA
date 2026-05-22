@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateChatResponse } from "@/lib/gemini/client";
+import { generateChatResponse, CHAT_MODEL } from "@/lib/gemini/client";
 import { TUTOR_SYSTEM_PROMPT, STUDY_TECHNIQUES } from "@/lib/gemini/prompts";
 
 export async function POST(req) {
@@ -74,11 +74,63 @@ export async function POST(req) {
       contextText = sections.join("\n\n---\n\n");
     }
 
+    // 4.5. Obtener los quizzes del estudiante para esta materia
+    const { data: quizzes, error: quizzesError } = await supabase
+      .from("quizzes")
+      .select("*")
+      .eq("subject_id", subjectId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    let quizzesText = "No hay cuestionarios creados para esta materia aún.";
+    if (!quizzesError && quizzes && quizzes.length > 0) {
+      const formattedQuizzes = quizzes.map((q, qIndex) => {
+        let durationMinutes = "-";
+        if (q.created_at && q.completed_at) {
+          const start = new Date(q.created_at);
+          const end = new Date(q.completed_at);
+          const diffMs = end - start;
+          durationMinutes = Math.round(diffMs / 60000);
+        }
+        
+        let questionsText = "Preguntas y respuestas no disponibles.";
+        if (q.questions_json && q.questions_json.length > 0) {
+          questionsText = q.questions_json.map((quest, questIdx) => {
+            const userAnswerObj = q.user_answers?.find(ans => ans.questionIndex === questIdx);
+            const chosenOptionIdx = userAnswerObj?.selectedOption;
+            const isCorrect = userAnswerObj?.isCorrect;
+            
+            const chosenOptionText = chosenOptionIdx !== undefined ? quest.options[chosenOptionIdx] : "Sin responder";
+            const correctOptionText = quest.options[quest.correct];
+            const resultText = chosenOptionIdx !== undefined ? (isCorrect ? "Correcto ✓" : "Incorrecto ✗") : "Sin responder";
+            
+            return `  Pregunta ${questIdx + 1}: ${quest.question}
+  - Opciones: ${quest.options.map((opt, oIdx) => `[${oIdx}] ${opt}`).join(", ")}
+  - Respuesta del estudiante: "${chosenOptionText}" (Opción ${chosenOptionIdx !== undefined ? chosenOptionIdx : "-"}) - ${resultText}
+  - Respuesta correcta: "${correctOptionText}" (Opción ${quest.correct})
+  - Explicación: ${quest.explanation || "No provista"}`;
+          }).join("\n\n");
+        }
+
+        return `--- CUESTIONARIO ${qIndex + 1}: "${q.name}" ---
+- ID del cuestionario: ${q.id}
+- Estado: ${q.completed_at ? "Completado" : "En Proceso"}
+- Creado el: ${new Date(q.created_at).toLocaleString()}
+- Finalizado el: ${q.completed_at ? new Date(q.completed_at).toLocaleString() : "N/A"}
+- Duración: ${durationMinutes} min
+- Puntuación obtenida: ${q.score !== null ? `${q.score}%` : "Sin puntuación aún"}
+- Preguntas y Desempeño:
+${questionsText}`;
+      });
+      quizzesText = formattedQuizzes.join("\n\n=================================\n\n");
+    }
+
     // 5. System prompt con contexto enriquecido
     const techniqueInstruction =
       STUDY_TECHNIQUES[studyTechnique] || STUDY_TECHNIQUES.neutral;
     const systemInstruction = TUTOR_SYSTEM_PROMPT
       .replace("{context}", contextText)
+      .replace("{quizzesContext}", quizzesText)
       .replace("{studyTechnique}", techniqueInstruction);
 
     // 6. Generar respuesta en streaming con Gemini
@@ -118,4 +170,8 @@ export async function POST(req) {
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  return NextResponse.json({ model: CHAT_MODEL });
 }

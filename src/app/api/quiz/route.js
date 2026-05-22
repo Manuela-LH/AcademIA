@@ -31,7 +31,9 @@ export async function GET(req) {
 
     const quizzesWithDuration = quizzes.map(q => {
       let durationMinutes = null;
-      if (q.created_at && q.completed_at) {
+      if (q.time_spent_seconds !== undefined && q.time_spent_seconds !== null && q.time_spent_seconds > 0) {
+        durationMinutes = Math.round(q.time_spent_seconds / 60);
+      } else if (q.created_at && q.completed_at) {
         const start = new Date(q.created_at);
         const end = new Date(q.completed_at);
         const diffMs = end - start;
@@ -138,7 +140,7 @@ export async function POST(req) {
 
 export async function PUT(req) {
   try {
-    const { quizId, userAnswers, score, isFinished } = await req.json();
+    const { quizId, userAnswers, score, isFinished, name, timeSpentSeconds } = await req.json();
 
     if (!quizId) {
       return NextResponse.json({ error: "ID del cuestionario requerido" }, { status: 400 });
@@ -165,10 +167,11 @@ export async function PUT(req) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const updateData = {
-      user_answers: userAnswers,
-      score: score
-    };
+    const updateData = {};
+    if (userAnswers !== undefined) updateData.user_answers = userAnswers;
+    if (score !== undefined) updateData.score = score;
+    if (name !== undefined) updateData.name = name;
+    if (timeSpentSeconds !== undefined) updateData.time_spent_seconds = timeSpentSeconds;
     
     if (isFinished) {
       updateData.completed_at = new Date().toISOString();

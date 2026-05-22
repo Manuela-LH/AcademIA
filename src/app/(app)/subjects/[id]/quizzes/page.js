@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Plus, Loader2, Clock, Target, Trash2, Eye } from "lucide-react";
+import { BookOpen, Plus, Loader2, Clock, Target, Trash2, Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import DeleteConfirmModal from "@/components/documents/DeleteConfirmModal";
@@ -22,6 +22,9 @@ export default function QuizzesPage({ params }) {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [deletingQuiz, setDeletingQuiz] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingQuiz, setEditingQuiz] = useState(null);
+  const [editQuizName, setEditQuizName] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -89,6 +92,34 @@ export default function QuizzesPage({ params }) {
     }
   };
 
+  const handleConfirmEditName = async () => {
+    if (!editQuizName || !editQuizName.trim()) {
+      toast.error("El nombre del cuestionario no puede estar vacío");
+      return;
+    }
+    setIsEditingName(true);
+    try {
+      const res = await fetch("/api/quiz", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quizId: editingQuiz.id,
+          name: editQuizName.trim()
+        })
+      });
+      if (!res.ok) throw new Error("Error al actualizar el nombre");
+      
+      toast.success("Nombre del cuestionario actualizado");
+      setEditingQuiz(null);
+      setEditQuizName("");
+      fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setIsEditingName(false);
+    }
+  };
+
   const handleQuizClick = (quiz) => {
     if (!quiz.completed_at) {
       router.push(`/subjects/${subjectId}/quizzes/${quiz.id}`);
@@ -99,7 +130,7 @@ export default function QuizzesPage({ params }) {
   };
 
   const formatDuration = (minutes) => {
-    if (!minutes) return "-";
+    if (minutes === undefined || minutes === null) return "-";
     if (minutes < 1) return "< 1 min";
     return `${minutes} min`;
   };
@@ -204,29 +235,38 @@ export default function QuizzesPage({ params }) {
               </div>
 
               <div className="flex items-center gap-4">
-                {(quiz.score !== null || (quiz.user_answers && quiz.user_answers.length > 0)) && (
-                  <div className={`
-                    px-4 py-2 rounded-xl font-bold text-sm
-                    ${quiz.completed_at ? (quiz.score >= 70 ? 'bg-green-50 text-green-600' : 
-                      quiz.score >= 50 ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-500') : 'bg-brand-teal/10 text-brand-teal'}
-                  `}>
-                    {quiz.completed_at ? (
-                      (() => {
-                        const correctAnswers = quiz.user_answers?.filter(a => a.isCorrect).length || 0;
-                        const totalQuestions = quiz.questions_json?.length || 0;
-                        return `${correctAnswers}/${totalQuestions} (${quiz.score}%)`;
-                      })()
-                    ) : (
-                      (() => {
-                        const answered = quiz.user_answers?.length || 0;
-                        const total = quiz.questions_json?.length || 0;
-                        const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
-                        return `${progress}% Completado`;
-                      })()
-                    )}
-                  </div>
-                )}
+                <div className={`
+                  px-4 py-2 rounded-xl font-bold text-sm
+                  ${quiz.completed_at ? (quiz.score >= 70 ? 'bg-green-50 text-green-600' : 
+                    quiz.score >= 50 ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-500') : 'bg-brand-teal/10 text-brand-teal'}
+                `}>
+                  {quiz.completed_at ? (
+                    (() => {
+                      const correctAnswers = quiz.user_answers?.filter(a => a.isCorrect).length || 0;
+                      const totalQuestions = quiz.questions_json?.length || 0;
+                      return `${correctAnswers}/${totalQuestions} (${quiz.score}%)`;
+                    })()
+                  ) : (
+                    (() => {
+                      const answered = quiz.user_answers?.length || 0;
+                      const total = quiz.questions_json?.length || 0;
+                      const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
+                      return `En Proceso (${progress}%)`;
+                    })()
+                  )}
+                </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingQuiz(quiz);
+                      setEditQuizName(quiz.name);
+                    }}
+                    style={{ color: "#DB93B0" }}
+                    className="p-2.5 hover:bg-[#DB93B0]/10 rounded-xl transition-all"
+                  >
+                    <Pencil className="h-5 w-5" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -260,6 +300,19 @@ export default function QuizzesPage({ params }) {
         onConfirm={confirmDeleteQuiz}
         onCancel={() => setDeletingQuiz(null)}
       />
+
+      {editingQuiz && (
+        <QuizEditModal
+          quizName={editQuizName}
+          onChangeName={setEditQuizName}
+          isSaving={isEditingName}
+          onConfirm={handleConfirmEditName}
+          onCancel={() => {
+            setEditingQuiz(null);
+            setEditQuizName("");
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -269,8 +322,14 @@ function QuizReviewModal({ quiz, onClose }) {
   const userAnswers = quiz.user_answers || [];
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 md:p-8 shadow-2xl">
+    <div 
+      onClick={onClose} 
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-white rounded-[2rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 md:p-8 shadow-2xl"
+      >
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-black text-brand-taupe">{quiz.name}</h2>
@@ -332,6 +391,53 @@ function QuizReviewModal({ quiz, onClose }) {
               </div>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuizEditModal({ quizName, onChangeName, isSaving, onConfirm, onCancel }) {
+  return (
+    <div 
+      onClick={onCancel}
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-[2rem] w-full max-w-md p-6 md:p-8 shadow-2xl animate-in zoom-in-95 duration-200"
+      >
+        <h3 className="text-xl font-black text-brand-taupe mb-4">Editar nombre</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-brand-steel/60 mb-2">
+              Nombre del cuestionario
+            </label>
+            <input 
+              type="text"
+              value={quizName}
+              onChange={(e) => onChangeName(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-brand-steel/20 focus:outline-none focus:border-brand-teal text-brand-taupe font-medium transition-all"
+              placeholder="Ej. Cuestionario de Histología"
+              autoFocus
+            />
+          </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              onClick={onCancel}
+              disabled={isSaving}
+              className="px-5 py-3 border border-brand-steel/10 hover:border-brand-steel/30 text-brand-taupe font-bold rounded-xl transition-all"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isSaving || !quizName.trim()}
+              className="px-5 py-3 bg-[#DB93B0] hover:bg-[#c97fa0] text-white font-bold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center min-w-[100px]"
+            >
+              {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirmar"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

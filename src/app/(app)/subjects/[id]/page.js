@@ -28,6 +28,7 @@ export default function SubjectChatPage({ params }) {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [technique, setTechnique] = useState("neutral");
+  const [chatModel, setChatModel] = useState("gemini-2.5-flash");
 
   // Mobile States
   const [isDocsOpenMobile, setIsDocsOpenMobile] = useState(false);
@@ -43,6 +44,20 @@ export default function SubjectChatPage({ params }) {
       } else {
         setIsApiKeyModalOpen(true);
       }
+
+      // Obtener el nombre del modelo de chat de forma dinámica
+      try {
+        const modelRes = await fetch("/api/chat");
+        if (modelRes.ok) {
+          const modelData = await modelRes.json();
+          if (modelData.model) {
+            setChatModel(modelData.model);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching chat model name:", err);
+      }
+
       const { data: sub } = await supabase.from('subjects').select('*').eq('id', subjectId).single();
       if (sub) setSubject(sub);
       const { data: docs } = await supabase.from('documents').select('*').eq('subject_id', subjectId).order('created_at', { ascending: false });
@@ -114,20 +129,28 @@ export default function SubjectChatPage({ params }) {
           </div>
         </div>
 
-        {/* Mobile Actions Toggle */}
-        <div className="flex lg:hidden gap-2">
-          <button 
-            onClick={() => setIsDocsOpenMobile(true)}
-            className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe active:bg-brand-blush/20"
-          >
-            <FileText className="h-5 w-5" />
-          </button>
-          <button 
-            onClick={() => setIsQuizzesOpenMobile(true)}
-            className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe active:bg-brand-blush/20"
-          >
-            <BookOpen className="h-5 w-5" />
-          </button>
+        {/* Right side: Model indicator & Mobile Actions Toggle */}
+        <div className="flex items-center gap-3">
+          <div className="bg-brand-teal/10 text-brand-teal border border-brand-teal/20 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse"></span>
+            <span>{chatModel}</span>
+          </div>
+
+          {/* Mobile Actions Toggle */}
+          <div className="flex lg:hidden gap-2">
+            <button 
+              onClick={() => setIsDocsOpenMobile(true)}
+              className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe active:bg-brand-blush/20"
+            >
+              <FileText className="h-5 w-5" />
+            </button>
+            <button 
+              onClick={() => setIsQuizzesOpenMobile(true)}
+              className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe active:bg-brand-blush/20"
+            >
+              <BookOpen className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
 

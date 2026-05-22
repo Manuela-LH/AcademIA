@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS quizzes (
   questions_json JSONB NOT NULL,
   user_answers JSONB,
   score NUMERIC(5,2),
+  time_spent_seconds INTEGER DEFAULT 0,
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

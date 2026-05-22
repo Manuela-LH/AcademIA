@@ -1,11 +1,83 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+
+function useActiveTimer() {
+  const startTimeRef = useRef(null);
+  const elapsedMsRef = useRef(0);
+  const intervalIdRef = useRef(null);
+  const [displayTime, setDisplayTime] = useState("00:00");
+
+  const updateDisplay = (totalMs) => {
+    const totalSeconds = Math.floor(totalMs / 1000);
+    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const s = (totalSeconds % 60).toString().padStart(2, '0');
+    setDisplayTime(`${m}:${s}`);
+  };
+
+  const setInitialElapsed = (ms) => {
+    elapsedMsRef.current = ms;
+    updateDisplay(ms);
+  };
+
+  const startInterval = () => {
+    if (intervalIdRef.current) clearInterval(intervalIdRef.current);
+    startTimeRef.current = performance.now();
+    intervalIdRef.current = setInterval(() => {
+      const currentElapsed = elapsedMsRef.current + (performance.now() - startTimeRef.current);
+      updateDisplay(currentElapsed);
+    }, 1000);
+  };
+
+  const stopInterval = () => {
+    if (intervalIdRef.current) {
+      clearInterval(intervalIdRef.current);
+      intervalIdRef.current = null;
+      elapsedMsRef.current += performance.now() - startTimeRef.current;
+    }
+  };
+
+  useEffect(() => {
+    startTimeRef.current = performance.now();
+    startInterval();
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) stopInterval();
+      else startInterval();
+    };
+
+    const handleFocus = () => {
+      if (!intervalIdRef.current && !document.hidden) startInterval();
+    };
+
+    const handleBlur = () => stopInterval();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      stopInterval();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
+
+  const getTotalSeconds = () => {
+    const totalMs = intervalIdRef.current && startTimeRef.current
+      ? elapsedMsRef.current + (performance.now() - startTimeRef.current)
+      : elapsedMsRef.current;
+    return Math.floor(totalMs / 1000);
+  };
+
+  return { displayTime, getTotalSeconds, setInitialElapsed };
+}
 
 export default function QuizPlayPage({ params }) {
   const resolvedParams = use(params);
@@ -13,6 +85,7 @@ export default function QuizPlayPage({ params }) {
   const quizId = resolvedParams.quizId;
   const router = useRouter();
   const supabase = createClient();
+  const { displayTime, getTotalSeconds, setInitialElapsed } = useActiveTimer();
 
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -21,6 +94,7 @@ export default function QuizPlayPage({ params }) {
   const [userAnswers, setUserAnswers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAnswer, setIsSavingAnswer] = useState(false);
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -35,6 +109,9 @@ export default function QuizPlayPage({ params }) {
             setUserAnswers(foundQuiz.user_answers || []);
             setCurrentScore(foundQuiz.score || 0);
             setAnswersCount(foundQuiz.user_answers?.length || 0);
+            if (foundQuiz.time_spent_seconds > 0) {
+              setInitialElapsed(foundQuiz.time_spent_seconds * 1000);
+            }
           }
         }
       } catch (e) {
@@ -69,7 +146,7 @@ export default function QuizPlayPage({ params }) {
     const correctAnswers = newAnswers.filter(a => a.isCorrect).length;
     const percentage = Math.round((correctAnswers / questions.length) * 100);
 
-    setIsSaving(true);
+    setIsSavingAnswer(true);
     try {
       await fetch("/api/quiz", {
         method: "PUT",
@@ -78,13 +155,14 @@ export default function QuizPlayPage({ params }) {
           quizId,
           userAnswers: newAnswers,
           score: percentage,
-          isFinished: false
+          isFinished: false,
+          timeSpentSeconds: getTotalSeconds()
         })
       });
     } catch (e) {
       console.error(e);
     } finally {
-      setIsSaving(false);
+      setIsSavingAnswer(false);
     }
   };
 
@@ -101,7 +179,8 @@ export default function QuizPlayPage({ params }) {
           quizId,
           userAnswers,
           score: percentage,
-          isFinished: true
+          isFinished: true,
+          timeSpentSeconds: getTotalSeconds()
         })
       });
       router.push(`/subjects/${subjectId}/quizzes`);
@@ -161,9 +240,10 @@ export default function QuizPlayPage({ params }) {
               <span className="font-bold text-brand-taupe">
                 Progreso: {answersCount} / {questions.length}
               </span>
-              <span className="font-bold text-brand-teal">
-                Aciertos: {currentScore}
-              </span>
+              <div className="flex items-center gap-2 bg-brand-teal/10 text-brand-teal px-3 py-1.5 rounded-full font-bold text-sm shadow-sm">
+                <Clock className="h-4 w-4" />
+                <span>{displayTime}</span>
+              </div>
             </div>
 
             <div className="space-y-6 pb-6">
@@ -201,6 +281,13 @@ export default function QuizPlayPage({ params }) {
               <Loader2 className="h-8 w-8 animate-spin text-brand-teal mx-auto mb-2" />
               <p className="text-brand-steel">Guardando resultados...</p>
             </div>
+          </div>
+        )}
+
+        {isSavingAnswer && (
+          <div className="fixed bottom-5 right-5 bg-brand-taupe/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 z-50 border border-white/10 animate-in fade-in slide-in-from-bottom-5 duration-300">
+            <Loader2 className="h-4 w-4 animate-spin text-brand-teal" />
+            <span className="text-sm font-bold tracking-wide">Guardando respuesta...</span>
           </div>
         )}
       </div>

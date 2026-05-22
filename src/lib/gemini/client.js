@@ -7,11 +7,13 @@ export const getGeminiClient = (apiKey) => {
   return new GoogleGenerativeAI(apiKey);
 };
 
+export const CHAT_MODEL = "gemini-2.5-flash";
+export const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-pro"];
+
 export const generateChatResponse = async (prompt, systemInstruction, apiKey) => {
   const genAI = getGeminiClient(apiKey);
 
-  // El usuario especifico usar gemini-2.5-flash
-  const modelName = "gemini-2.5-flash";
+  const modelName = CHAT_MODEL;
   
   const model = genAI.getGenerativeModel({
     model: modelName,
@@ -34,7 +36,7 @@ export const analyzeImage = async (buffer, mimeType, apiKey) => {
   const genAI = getGeminiClient(apiKey);
   
   // Lista de modelos a intentar en orden de preferencia
-  const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash"];
+  const modelsToTry = FALLBACK_MODELS;
   
   const prompt = `
     Eres un experto en extracción de información académica. 
@@ -83,7 +85,7 @@ export const analyzeImage = async (buffer, mimeType, apiKey) => {
 export const analyzeDocument = async (buffer, mimeType, apiKey) => {
   const genAI = getGeminiClient(apiKey);
   
-  const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+  const modelsToTry = FALLBACK_MODELS;
   
   const prompt = `
     Eres un experto en extracción de información académica. 
@@ -142,7 +144,7 @@ export const validateApiKey = async (apiKey) => {
 
 export const generateContentWithFallback = async (prompt, generationConfig, apiKey) => {
   const genAI = getGeminiClient(apiKey);
-  const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash"];
+  const modelsToTry = FALLBACK_MODELS;
   let lastError = null;
 
   for (const modelName of modelsToTry) {
