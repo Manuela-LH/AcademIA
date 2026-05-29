@@ -38,10 +38,11 @@ export default function ChatWindow({ subjectId, hasApiKey, technique, setTechniq
     let mounted = true;
     async function initSession() {
       try {
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const res = await fetch("/api/chat/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subjectId })
+          body: JSON.stringify({ subjectId, timeZone })
         });
         if (res.ok) {
           const data = await res.json();
@@ -58,6 +59,33 @@ export default function ChatWindow({ subjectId, hasApiKey, technique, setTechniq
     initSession();
     return () => { mounted = false; };
   }, [subjectId, setInitialElapsed]);
+
+  // Cargar historial de chat desde localStorage al montar el componente o cambiar de materia
+  useEffect(() => {
+    const saved = localStorage.getItem(`chat_history_${subjectId}`);
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved));
+      } catch (err) {
+        console.error("Error al cargar el historial del chat desde localStorage:", err);
+      }
+    } else {
+      setMessages([
+        {
+          id: "1",
+          role: "assistant",
+          content: "¡Hola! Soy tu tutor IA para esta materia. He analizado los documentos que subiste. ¿En qué tema quieres profundizar hoy o qué dudas tienes?"
+        }
+      ]);
+    }
+  }, [subjectId]);
+
+  // Guardar historial de chat en localStorage cuando cambian los mensajes
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(`chat_history_${subjectId}`, JSON.stringify(messages));
+    }
+  }, [messages, subjectId]);
 
   useEffect(() => {
     if (!sessionId || !hasStarted) return;
@@ -124,11 +152,13 @@ export default function ChatWindow({ subjectId, hasApiKey, technique, setTechniq
     setMessages((prev) => [...prev, { id: assistantMsgId, role: "assistant", content: "" }]);
 
     try {
+      const historyToSend = [...messages, userMsg];
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMsg.content,
+          history: historyToSend,
           subjectId,
           studyTechnique: technique,
         }),

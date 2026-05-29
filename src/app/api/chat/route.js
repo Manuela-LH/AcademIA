@@ -7,7 +7,7 @@ import { TUTOR_SYSTEM_PROMPT, STUDY_TECHNIQUES } from "@/lib/gemini/prompts";
 
 export async function POST(req) {
   try {
-    const { message, subjectId, studyTechnique = "neutral" } = await req.json();
+    const { message, subjectId, studyTechnique = "neutral", history } = await req.json();
 
     if (!message || !subjectId) {
       return NextResponse.json(
@@ -133,10 +133,34 @@ ${questionsText}`;
       .replace("{quizzesContext}", quizzesText)
       .replace("{studyTechnique}", techniqueInstruction);
 
-    // 6. Generar respuesta en streaming con Gemini
-    const streamResult = await generateChatResponse(message, systemInstruction, userApiKey);
+    // 6. Construir el historial de conversación en el formato de contents de Gemini
+    // El frontend envía el historial de mensajes incluyendo el mensaje actual del usuario al final.
+    // Filtramos mensajes vacíos (como el placeholder del stream) y mapeamos roles.
+    const HISTORY_LIMIT = 20; // Últimos 20 mensajes para acotar el uso de tokens
+    const rawHistory = Array.isArray(history) ? history : [];
 
-    // 7. Convertir AsyncGenerator → ReadableStream compatible con Next.js
+    const contents = rawHistory
+      .filter(msg => msg.content && msg.content.trim() !== "")
+      .slice(-HISTORY_LIMIT)
+      .map(msg => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }],
+      }));
+
+    // Garantizar que el último elemento sea el mensaje actual del usuario
+    // (por si el historial llegó incompleto o vacío)
+    if (
+      contents.length === 0 ||
+      contents[contents.length - 1].role !== "user" ||
+      contents[contents.length - 1].parts[0].text !== message
+    ) {
+      contents.push({ role: "user", parts: [{ text: message }] });
+    }
+
+    // 7. Generar respuesta en streaming con Gemini usando el historial completo
+    const streamResult = await generateChatResponse(contents, systemInstruction, userApiKey);
+
+    // 8. Convertir AsyncGenerator → ReadableStream compatible con Next.js
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {

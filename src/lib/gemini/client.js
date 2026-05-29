@@ -10,7 +10,7 @@ export const getGeminiClient = (apiKey) => {
 export const CHAT_MODEL = "gemini-2.5-flash";
 export const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-pro"];
 
-export const generateChatResponse = async (prompt, systemInstruction, apiKey) => {
+export const generateChatResponse = async (promptOrContents, systemInstruction, apiKey) => {
   const genAI = getGeminiClient(apiKey);
 
   const modelName = CHAT_MODEL;
@@ -20,8 +20,13 @@ export const generateChatResponse = async (prompt, systemInstruction, apiKey) =>
     systemInstruction,
   });
 
+  // Acepta un string simple o un array de contents para conversaciones multi-turno
+  const requestPayload = Array.isArray(promptOrContents)
+    ? { contents: promptOrContents }
+    : promptOrContents;
+
   try {
-    const result = await model.generateContentStream(prompt);
+    const result = await model.generateContentStream(requestPayload);
     return result.stream;
   } catch (error) {
     console.error(`[generateChatResponse] Error con ${modelName}: ${error.message}`);
