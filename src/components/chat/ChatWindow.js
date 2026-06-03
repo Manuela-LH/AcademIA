@@ -14,6 +14,9 @@ const TECHNIQUES = [
   { id: "spaced", name: "Práctica Espaciada" }
 ];
 
+// Cache to prevent duplicate concurrent session creations (e.g. in React Strict Mode)
+const sessionInitCache = new Map();
+
 export default function ChatWindow({ subjectId, hasApiKey, technique, setTechnique, onRequestApiKey }) {
   const [messages, setMessages] = useState([
     {
@@ -39,18 +42,44 @@ export default function ChatWindow({ subjectId, hasApiKey, technique, setTechniq
     async function initSession() {
       try {
         const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const res = await fetch("/api/chat/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subjectId, timeZone })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (!mounted) return;
-          setSessionId(data.sessionId);
-          if (data.time_spent_seconds > 0) {
-            setInitialElapsed(data.time_spent_seconds * 1000);
-          }
+        const dateStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD local format
+        
+        const cached = sessionInitCache.get(subjectId);
+        let fetchPromise;
+        
+        if (cached && cached.dateStr === dateStr) {
+          fetchPromise = cached.promise;
+        } else {
+          fetchPromise = fetch("/api/chat/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subjectId, timeZone })
+          }).then(async (res) => {
+            if (res.ok) {
+              return res.json();
+            }
+            throw new Error("Failed to initialize session");
+          }).catch(err => {
+            sessionInitCache.delete(subjectId);
+            throw err;
+          });
+          
+          sessionInitCache.set(subjectId, { promise: fetchPromise, dateStr });
+          
+          // Clear from cache after a short delay to allow concurrent mounts to share it,
+          // but ensure any subsequent navigation fetches fresh data from the database.
+          setTimeout(() => {
+            if (sessionInitCache.get(subjectId)?.promise === fetchPromise) {
+              sessionInitCache.delete(subjectId);
+            }
+          }, 3000);
+        }
+
+        const data = await fetchPromise;
+        if (!mounted) return;
+        setSessionId(data.sessionId);
+        if (data.time_spent_seconds > 0) {
+          setInitialElapsed(data.time_spent_seconds * 1000);
         }
       } catch (err) {
         console.error("Error initializing chat session:", err);

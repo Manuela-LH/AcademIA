@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [deletingId, setDeletingId] = useState(null);
@@ -46,6 +47,7 @@ export default function DashboardPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSubjects();
+    setIsMounted(true);
   }, [fetchSubjects]);
 
   const handleDeleteSubject = async (e, id, name) => {
@@ -75,9 +77,13 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredSubjects = subjects.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSubjects = subjects.filter(s => {
+    const term = searchTerm.toLowerCase();
+    return (
+      s.name.toLowerCase().includes(term) ||
+      (s.description && s.description.toLowerCase().includes(term))
+    );
+  });
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-700">
@@ -101,7 +107,7 @@ export default function DashboardPage() {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar materia por nombre..."
+          placeholder="Buscar por nombre o descripción..."
           className="w-full pl-14 pr-6 py-4 bg-white border border-brand-steel/10 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-teal/5 shadow-sm transition-all text-brand-taupe font-medium placeholder:text-brand-steel/50"
         />
       </div>
@@ -178,7 +184,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3 text-sm font-bold text-brand-steel/60">
                 <span className="bg-brand-blush/20 px-3 py-1 rounded-lg truncate max-w-[200px]">{subject.description || "Sin descripción"}</span>
                 <span className="w-1 h-1 bg-brand-steel/30 rounded-full"></span>
-                <span suppressHydrationWarning>{typeof window !== 'undefined' ? new Date(subject.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}</span>
+                <span>{isMounted ? new Date(subject.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}</span>
               </div>
 
               <div className="mt-8 flex items-center text-brand-teal font-bold text-sm opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
