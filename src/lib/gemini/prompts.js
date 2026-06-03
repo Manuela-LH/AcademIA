@@ -62,3 +62,106 @@ REGLAS Y TIPOS DE PREGUNTAS:
 - Varía entre conceptos, definiciones y aplicaciones.
 - Dificultad progresiva: 40% fácil, 40% medio, 20% difícil.
 `;
+
+function formatQuizDetails(quizzes) {
+  if (!quizzes || quizzes.length === 0) return "No hay cuestionarios disponibles.";
+
+  return quizzes.map((q, qi) => {
+    const completedAt = q.completed_at
+      ? new Date(q.completed_at).toLocaleString("es-ES")
+      : "No completado";
+    const timeSpent = q.time_spent_seconds
+      ? `${Math.floor(q.time_spent_seconds / 60)} min ${q.time_spent_seconds % 60}s`
+      : "N/A";
+    const score = q.score != null ? `${q.score}%` : "N/A";
+
+    let questionsText = "";
+    if (Array.isArray(q.questions_json) && q.questions_json.length > 0) {
+      questionsText = q.questions_json.map((ques, idx) => {
+        const optionsText = Array.isArray(ques.options)
+          ? ques.options.map((opt, oi) => `${String.fromCharCode(65 + oi)}) ${opt}`).join(" | ")
+          : "N/A";
+        const correctAnswer = ques.options?.[ques.correct] ?? "N/A";
+
+        let userAnswerText = "No respondida";
+        if (Array.isArray(q.user_answers) && q.user_answers.length > 0) {
+          const ua = q.user_answers[idx];
+          if (ua) {
+            const selected = ques.options?.[ua.selectedOption] ?? "N/A";
+            userAnswerText = `${selected} (${ua.isCorrect ? "Correcta" : "Incorrecta"})`;
+          }
+        }
+
+        return `    ${idx + 1}. ${ques.question}
+       Opciones: ${optionsText}
+       Respuesta del estudiante: ${userAnswerText}
+       Respuesta correcta: ${correctAnswer}
+       Explicación: ${ques.explanation || "N/A"}`;
+      }).join("\n");
+    }
+
+    return `--- CUESTIONARIO ${qi + 1}: "${q.name || "Sin nombre"}" ---
+  Completado: ${completedAt}
+  Tiempo: ${timeSpent}
+  Puntuación: ${score}
+  Preguntas:
+${questionsText}`;
+  }).join("\n\n");
+}
+
+export const getSuggestionPrompt = ({
+  subjectName,
+  completedQuizzes,
+  totalQuizzes,
+  averageScore,
+  totalCorrect,
+  totalIncorrect,
+  correctPct,
+  formattedStudyTime,
+  documentsCount,
+  documentListString,
+  quizzes,
+  previousSuggestion,
+  previousUpdatedAt
+}) => {
+  let prompt = `Eres un tutor académico de IA inteligente y motivador de AcademIA.
+Tu tarea es analizar el rendimiento y progreso de un estudiante en la materia "${subjectName}" y generar una sugerencia de estudio personalizada de exactamente 5 a 7 líneas.
+
+Aquí tienes las métricas actuales del estudiante en esta materia:
+- Cuestionarios (Quizzes) completados: ${completedQuizzes} de un total de ${totalQuizzes} cuestionarios creados.
+- Puntuación media en quizzes: ${averageScore}%.
+- Respuestas en quizzes: ${totalCorrect} correctas, ${totalIncorrect} incorrectas (Tasa de acierto: ${correctPct}%).
+- Tiempo total de estudio registrado (Chat + Quizzes): ${formattedStudyTime}.
+- Documentos cargados: ${documentsCount} documento(s) (${documentListString}).
+
+A continuación se detalla cada cuestionario con sus preguntas, las respuestas del estudiante, las respuestas correctas y las explicaciones:
+
+${formatQuizDetails(quizzes)}
+`;
+
+  if (previousSuggestion) {
+    const formattedDate = previousUpdatedAt ? new Date(previousUpdatedAt).toLocaleString("es-ES") : "fecha desconocida";
+    prompt += `
+Existe una sugerencia previa realizada el ${formattedDate}:
+"${previousSuggestion}"
+
+Por favor, compara las métricas y el detalle de los cuestionarios actuales con la sugerencia previa. Analiza si ha habido progreso o si persisten los mismos problemas, y genera una nueva sugerencia con base en esta comparación.
+`;
+  } else {
+    prompt += `
+No hay sugerencias previas registradas para esta materia. Realiza un diagnóstico inicial basado en las métricas y el detalle de los cuestionarios.
+`;
+  }
+
+  prompt += `
+Instrucciones estrictas para la respuesta:
+1. El texto generado debe tener una extensión exacta de entre 5 y 7 líneas.
+2. Debe ser redactado en español.
+3. Debe ser empático, constructivo y directamente accionable, indicando recomendaciones concretas basadas en las métricas y en las respuestas incorrectas del estudiante para sugerir temas o conceptos específicos a repasar.
+4. No uses formato markdown de cabeceras, solo texto corrido o con viñetas ligeras si cabe en el límite de líneas, pero preferiblemente en un solo párrafo compacto de 5-7 líneas.
+5. Devuelve únicamente el texto de la sugerencia, sin preámbulos, saludos, ni explicaciones adicionales.
+`;
+
+  return prompt;
+};
+

@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS subjects (
   name TEXT NOT NULL,
   description TEXT,
   color TEXT DEFAULT '#16697A',
+  suggestion TEXT,
+  suggestion_updated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

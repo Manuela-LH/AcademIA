@@ -8,7 +8,7 @@ export const getGeminiClient = (apiKey) => {
 };
 
 export const CHAT_MODEL = "gemini-2.5-flash";
-export const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-pro"];
+export const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
 
 export const generateChatResponse = async (promptOrContents, systemInstruction, apiKey) => {
   const genAI = getGeminiClient(apiKey);

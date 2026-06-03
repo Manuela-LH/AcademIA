@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
   Loader2, LayoutDashboard, CheckCircle, Clock, Target, Hash,
-  BarChart3, TrendingUp, Layers, HelpCircle, ChevronLeft, ChevronRight
+  BarChart3, TrendingUp, Layers, HelpCircle, ChevronLeft, ChevronRight,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -180,6 +181,7 @@ export default function DashboardPage() {
   const [rawData, setRawData] = useState({ subjects: [], quizzes: [], chatSessions: [] });
   const [selectedSubjectId, setSelectedSubjectId] = useState("all");
   const [chartWeekOffset, setChartWeekOffset] = useState(0);
+  const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
@@ -200,7 +202,7 @@ export default function DashboardPage() {
         if (quizzesError) throw quizzesError;
 
         const { data: subjects, error: subjectsError } = await supabase
-          .from("subjects").select("id, name, color").eq("user_id", user.id);
+          .from("subjects").select("id, name, color, suggestion, suggestion_updated_at").eq("user_id", user.id);
         if (subjectsError) throw subjectsError;
 
         const { data: chatSessions, error: chatError } = await supabase
@@ -219,6 +221,35 @@ export default function DashboardPage() {
     }
     fetchStats();
   }, [router, supabase]);
+
+  const handleGenerateSuggestion = async () => {
+    if (selectedSubjectId === "all") return;
+    setIsGeneratingSuggestion(true);
+    try {
+      const res = await fetch(`/api/subjects/${selectedSubjectId}/suggest`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Error al generar la sugerencia");
+      }
+
+      setRawData(prev => ({
+        ...prev,
+        subjects: prev.subjects.map(s =>
+          s.id === selectedSubjectId
+            ? { ...s, suggestion: data.suggestion, suggestion_updated_at: data.updatedAt }
+            : s
+        )
+      }));
+      toast.success("¡Sugerencia generada con éxito!");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Error al conectar con la IA.");
+    } finally {
+      setIsGeneratingSuggestion(false);
+    }
+  };
 
   // ── Derived selections ────────────────────────────────────────────────────
   const selectedSubject = rawData.subjects.find(s => s.id === selectedSubjectId);
@@ -445,6 +476,64 @@ export default function DashboardPage() {
       </div>
 
       <div className="space-y-12">
+
+        {/* ── Suggestions Section ── */}
+        {selectedSubjectId !== "all" && selectedSubject && (
+          <section className="bg-gradient-to-r from-brand-teal/5 to-brand-blush/5 border border-brand-steel/15 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-6 w-6 text-brand-teal animate-pulse" />
+              <h2 className="text-2xl font-bold text-brand-taupe">Sugerencias</h2>
+            </div>
+
+            <div className="bg-white/70 backdrop-blur-md border border-brand-steel/10 rounded-2xl p-5 mb-4 shadow-inner min-h-[120px] flex flex-col justify-center">
+              {isGeneratingSuggestion ? (
+                <div className="flex flex-col items-center justify-center py-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-brand-teal mb-2" />
+                  <p className="text-sm font-semibold text-brand-steel">Generando sugerencia personalizada con Gemini...</p>
+                </div>
+              ) : selectedSubject.suggestion ? (
+                <p className="text-brand-taupe text-sm leading-relaxed font-medium">
+                  {selectedSubject.suggestion}
+                </p>
+              ) : (
+                <p className="text-brand-steel italic text-sm">
+                  Sin sugerencia
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <button
+                onClick={handleGenerateSuggestion}
+                disabled={isGeneratingSuggestion}
+                className="flex items-center gap-2 bg-brand-teal hover:bg-brand-teal/90 disabled:bg-brand-teal/50 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all text-sm cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isGeneratingSuggestion ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Cargando...</span>
+                  </>
+                ) : selectedSubject.suggestion ? (
+                  "Regenerar"
+                ) : (
+                  "Generar"
+                )}
+              </button>
+
+              {!isGeneratingSuggestion && selectedSubject.suggestion && selectedSubject.suggestion_updated_at && (
+                <span className="text-xs font-bold text-brand-steel bg-brand-steel/10 px-3 py-1.5 rounded-lg">
+                  Actualizado el: {new Date(selectedSubject.suggestion_updated_at).toLocaleString("es-ES", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })}
+                </span>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ── Quiz performance ── */}
         <section>
