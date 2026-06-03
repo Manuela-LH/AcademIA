@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, FileText, Loader2, Trash2, Info, Key } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Loader2, Trash2, Info, Key, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import FileUploader from "@/components/documents/FileUploader";
 import DeleteConfirmModal from "@/components/documents/DeleteConfirmModal";
@@ -33,6 +33,9 @@ export default function SubjectChatPage({ params }) {
   // Mobile States
   const [isDocsOpenMobile, setIsDocsOpenMobile] = useState(false);
   const [isQuizzesOpenMobile, setIsQuizzesOpenMobile] = useState(false);
+
+  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
+  const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
 
   const supabase = createClient();
 // ... (fetchData and handleDeleteDoc stay the same)
@@ -97,6 +100,31 @@ export default function SubjectChatPage({ params }) {
       setIsDeletingDoc(false);
       setDeletingDocId(null);
       setDeletingDocName("");
+    }
+  };
+
+  const handleGenerateSuggestion = async () => {
+    setIsGeneratingSuggestion(true);
+    try {
+      const res = await fetch(`/api/subjects/${subjectId}/suggest`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Error al generar la sugerencia");
+      }
+
+      setSubject(prev => ({
+        ...prev,
+        suggestion: data.suggestion,
+        suggestion_updated_at: data.updatedAt
+      }));
+      toast.success("¡Sugerencia generada con éxito!");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Error al conectar con la IA.");
+    } finally {
+      setIsGeneratingSuggestion(false);
     }
   };
 
@@ -280,6 +308,24 @@ export default function SubjectChatPage({ params }) {
               Ver Cuestionarios
             </Link>
           </div>
+
+          <div className="bg-white border border-brand-steel/10 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-center">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-bold text-sm text-brand-taupe mb-1">Sugerencias</h3>
+                <p className="text-xs text-brand-steel">Recomendaciones de estudio</p>
+              </div>
+              <div className="h-9 w-9 bg-brand-teal/10 rounded-full flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-brand-teal" />
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsSuggestionOpen(true)}
+              className="w-full bg-brand-teal text-white font-semibold py-2 rounded-lg text-xs text-center hover:bg-[#0e4f5c] transition-colors cursor-pointer"
+            >
+              Ver Sugerencias
+            </button>
+          </div>
         </div>
 
       </div>
@@ -303,6 +349,76 @@ export default function SubjectChatPage({ params }) {
           setIsApiKeyModalOpen(false);
         }} 
       />
+
+      {/* Suggestions Modal */}
+      {isSuggestionOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-taupe/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4 border-b border-brand-steel/10 pb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-6 w-6 text-brand-teal animate-pulse" />
+                  <h2 className="text-xl font-black text-brand-taupe">Sugerencias</h2>
+                </div>
+                <button 
+                  onClick={() => setIsSuggestionOpen(false)}
+                  className="p-1 hover:bg-brand-blush/20 rounded-lg transition-colors text-brand-steel font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="bg-gradient-to-r from-brand-teal/5 to-brand-blush/5 border border-brand-steel/15 rounded-2xl p-5 mb-6 shadow-inner min-h-[120px] flex flex-col justify-center">
+                {isGeneratingSuggestion ? (
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <Loader2 className="h-8 w-8 animate-spin text-brand-teal mb-2" />
+                    <p className="text-sm font-semibold text-brand-steel">Generando sugerencia personalizada con Gemini...</p>
+                  </div>
+                ) : subject?.suggestion ? (
+                  <p className="text-brand-taupe text-sm leading-relaxed font-medium">
+                    {subject.suggestion}
+                  </p>
+                ) : (
+                  <p className="text-brand-steel italic text-sm text-center py-6">
+                    Sin sugerencia
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <button
+                  onClick={handleGenerateSuggestion}
+                  disabled={isGeneratingSuggestion}
+                  className="flex items-center gap-2 bg-brand-teal hover:bg-brand-teal/90 disabled:bg-brand-teal/50 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all text-sm cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {isGeneratingSuggestion ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Cargando...</span>
+                    </>
+                  ) : subject?.suggestion ? (
+                    "Regenerar"
+                  ) : (
+                    "Generar"
+                  )}
+                </button>
+
+                {!isGeneratingSuggestion && subject?.suggestion && subject?.suggestion_updated_at && (
+                  <span className="text-xs font-bold text-brand-steel bg-brand-steel/10 px-3 py-1.5 rounded-lg">
+                    Actualizado el: {new Date(subject.suggestion_updated_at).toLocaleString("es-ES", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
