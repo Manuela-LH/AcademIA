@@ -26,7 +26,13 @@ export default function LoginPage() {
       });
 
       if (error) {
-        toast.error("Error al iniciar sesión: " + error.message);
+        if (error.message === "Email not confirmed") {
+          toast.error(
+            "Tu correo electrónico aún no ha sido confirmado. Revisa tu bandeja de entrada y confirma tu cuenta antes de iniciar sesión."
+          );
+        } else {
+          toast.error("Error al iniciar sesión: " + error.message);
+        }
         return;
       }
 
@@ -84,6 +90,11 @@ export default function LoginPage() {
                 className="w-full px-4 py-2.5 border border-brand-steel/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-teal/50 transition-all font-medium"
                 placeholder="••••••••"
               />
+              <div className="text-right mt-1">
+                <Link href="/forgot-password" className="text-sm text-brand-teal font-bold hover:underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
             </div>
 
             <button

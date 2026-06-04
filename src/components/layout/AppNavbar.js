@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { LogOut, Settings, LayoutDashboard, BookOpen, ChevronDown } from "lucide-react";
+import { LogOut, Settings, LayoutDashboard, BookOpen, ChevronDown, HelpCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -58,6 +58,11 @@ export default function AppNavbar({ user }) {
     }
   };
 
+  const handleStartTutorial = () => {
+    setIsDropdownOpen(false);
+    window.dispatchEvent(new CustomEvent("run-page-tutorial"));
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -86,7 +91,7 @@ export default function AppNavbar({ user }) {
         </Link>
 
         {/* Center Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav id="nav-center-links" className="hidden md:flex items-center gap-8">
           <Link
             href="/subjects"
             className="flex items-center gap-2 text-sm font-bold text-brand-taupe hover:text-brand-teal transition-colors"
@@ -108,6 +113,7 @@ export default function AppNavbar({ user }) {
           <span className="hidden sm:block text-sm font-bold text-brand-taupe">{displayName}</span>
 
           <button
+            id="user-menu-btn"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-50 transition-colors focus:outline-none"
           >
@@ -154,6 +160,13 @@ export default function AppNavbar({ user }) {
                   <Settings className="h-4 w-4" />
                   Ajustes
                 </Link>
+                <button
+                  onClick={handleStartTutorial}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-brand-taupe hover:bg-brand-blush/20 hover:text-brand-teal rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  Tutorial
+                </button>
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"

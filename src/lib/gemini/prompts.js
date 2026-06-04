@@ -157,7 +157,7 @@ No hay sugerencias previas registradas para esta materia. Realiza un diagnóstic
 Instrucciones estrictas para la respuesta:
 1. El texto generado debe tener una extensión exacta de entre 5 y 7 líneas.
 2. Debe ser redactado en español.
-3. Debe ser empático, constructivo y directamente accionable, indicando recomendaciones concretas basadas en las métricas y en las respuestas incorrectas del estudiante para sugerir temas o conceptos específicos a repasar.
+3. Debe ser empático, constructivo y directamente accionable, indicando recomendaciones concretas basadas en las métricas y en las respuestas incorrectas del ultimo cuestionario realizado por el estudiante para sugerir temas o conceptos específicos a repasar.
 4. No uses formato markdown de cabeceras, solo texto corrido o con viñetas ligeras si cabe en el límite de líneas, pero preferiblemente en un solo párrafo compacto de 5-7 líneas.
 5. Devuelve únicamente el texto de la sugerencia, sin preámbulos, saludos, ni explicaciones adicionales.
 `;

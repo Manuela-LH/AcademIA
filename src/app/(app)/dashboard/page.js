@@ -96,20 +96,19 @@ function CalendarHeatmap({ quizzes, chatSessions }) {
   const cellBg = (minutes, isFuture) => {
     if (isFuture) return "bg-transparent";
     if (minutes === 0) return "bg-brand-steel/10";
-    if (minutes <= 10) return "bg-[#e6f2f4]";
-    if (minutes <= 30) return "bg-[#a3d1d9]";
-    if (minutes <= 60) return "bg-[#4899a8]";
-    return "bg-[#16697A]";
+    if (minutes <= 10) return "bg-[#f5e0ea]";
+    if (minutes <= 30) return "bg-[#ecc0d4]";
+    if (minutes <= 60) return "bg-[#e3a3c0]";
+    return "bg-[#DB93B0]";
   };
 
   const cellText = (minutes, isFuture) => {
     if (isFuture) return "text-brand-steel/20";
-    if (minutes > 30) return "text-white";
     return "text-brand-taupe/70";
   };
 
   return (
-    <div className="w-full select-none">
+    <div className="w-fit mx-auto select-none">
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-3">
         <button
@@ -131,23 +130,23 @@ function CalendarHeatmap({ quizzes, chatSessions }) {
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 gap-[3px] mb-1">
+      <div className="grid grid-cols-[repeat(7,34px)] gap-[2px] mb-1">
         {weekdays.map((d, i) => (
-          <div key={i} className="w-8 h-5 flex items-center justify-center text-[10px] font-bold text-brand-steel/60">
+          <div key={i} className="h-5 flex items-center justify-center text-[10px] font-bold text-brand-steel/60">
             {d}
           </div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-[3px]">
+      <div className="grid grid-cols-[repeat(7,34px)] gap-[2px]">
         {grid.map((cell, idx) => {
-          if (!cell) return <div key={`pad-${idx}`} className="w-8 h-8" />;
+          if (!cell) return <div key={`pad-${idx}`} className="h-8" />;
           return (
             <div
               key={idx}
               className={[
-                "w-8 h-8 flex items-center justify-center rounded-md",
+                "h-8 flex items-center justify-center rounded-md",
                 "text-[11px] font-semibold transition-transform hover:scale-110 cursor-default",
                 cellBg(cell.minutes, cell.isFuture),
                 cellText(cell.minutes, cell.isFuture),
@@ -165,10 +164,10 @@ function CalendarHeatmap({ quizzes, chatSessions }) {
       <div className="flex items-center gap-1.5 justify-end mt-3 text-[10px] font-bold text-brand-steel/60">
         <span>Menos</span>
         <div className="w-[8px] h-[8px] rounded-[1px] bg-brand-steel/10" />
-        <div className="w-[8px] h-[8px] rounded-[1px] bg-[#e6f2f4]" />
-        <div className="w-[8px] h-[8px] rounded-[1px] bg-[#a3d1d9]" />
-        <div className="w-[8px] h-[8px] rounded-[1px] bg-[#4899a8]" />
-        <div className="w-[8px] h-[8px] rounded-[1px] bg-[#16697A]" />
+        <div className="w-[8px] h-[8px] rounded-[1px] bg-[#f5e0ea]" />
+        <div className="w-[8px] h-[8px] rounded-[1px] bg-[#ecc0d4]" />
+        <div className="w-[8px] h-[8px] rounded-[1px] bg-[#e3a3c0]" />
+        <div className="w-[8px] h-[8px] rounded-[1px] bg-[#DB93B0]" />
         <span>Más</span>
       </div>
     </div>

@@ -20,7 +20,7 @@ export async function proxy(request) {
             request,
           })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, { ...options, maxAge: 30 * 24 * 60 * 60 })
           )
         },
       },
@@ -28,7 +28,13 @@ export async function proxy(request) {
   )
 
   // Refrescar la sesión si existe
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Redirigir usuarios autenticados fuera de páginas públicas
+  const publicPaths = ["/", "/login", "/register"]
+  if (user && publicPaths.includes(request.nextUrl.pathname)) {
+    return NextResponse.redirect(new URL("/subjects", request.url))
+  }
 
   return supabaseResponse
 }

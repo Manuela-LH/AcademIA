@@ -8,30 +8,33 @@ export const getGeminiClient = (apiKey) => {
 };
 
 export const CHAT_MODEL = "gemini-2.5-flash";
-export const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+export const FALLBACK_MODELS = ["gemini-2.5-flash-lite", "gemini-3.1-flash-lite"];
 
 export const generateChatResponse = async (promptOrContents, systemInstruction, apiKey) => {
   const genAI = getGeminiClient(apiKey);
 
-  const modelName = CHAT_MODEL;
-  
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    systemInstruction,
-  });
-
-  // Acepta un string simple o un array de contents para conversaciones multi-turno
+  // Try primary model first, then fallbacks
+  const modelsToTry = [CHAT_MODEL, ...FALLBACK_MODELS];
+  // Prepara la carga útil del request (string simple o array de contenidos)
   const requestPayload = Array.isArray(promptOrContents)
     ? { contents: promptOrContents }
     : promptOrContents;
 
-  try {
-    const result = await model.generateContentStream(requestPayload);
-    return result.stream;
-  } catch (error) {
-    console.error(`[generateChatResponse] Error con ${modelName}: ${error.message}`);
-    throw error;
+  let lastError = null;
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`[Gemini] Intentando generar respuesta de chat con: ${modelName}`);
+      const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
+      const result = await model.generateContentStream(requestPayload);
+      return result.stream;
+    } catch (error) {
+      lastError = error;
+      console.warn(`[generateChatResponse] El modelo ${modelName} falló: ${error.message}. Probando siguiente si está disponible...`);
+      // Si el error es por cuota (429), podemos seguir al siguiente modelo inmediatamente.
+    }
   }
+  console.error(`[generateChatResponse] Todos los modelos fallaron. Último error: ${lastError?.message}`);
+  throw lastError;
 };
 
 /**
