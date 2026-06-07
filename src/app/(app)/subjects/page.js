@@ -7,7 +7,15 @@ import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import CreateSubjectModal from "@/components/subjects/CreateSubjectModal";
 import DeleteConfirmModal from "@/components/documents/DeleteConfirmModal";
+import useTutorial from "@/hooks/useTutorial";
+import {
+  subjectsSteps,
+  joyrideStyles,
+  joyrideOptions,
+  joyrideLocale,
+} from "@/components/tutorial/tutorialConfig";
 
+// Carga dinámica sin SSR — obligatorio para react-joyride (accede al DOM)
 const Joyride = dynamic(
   () => import("react-joyride").then((mod) => ({ default: mod.Joyride })),
   { ssr: false }
@@ -25,88 +33,12 @@ export default function DashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
 
+  // Hook de tutorial — gestiona runTour, localStorage y el evento del navbar
+  const { runTour, handleJoyrideEvent } = useTutorial("subjects");
+
   const openCreateModal = () => {
     setEditingSubject(null);
     setIsModalOpen(true);
-  };
-
-  // Joyride states and configuration
-  const [runTour, setRunTour] = useState(false);
-
-  const steps = [
-    {
-      target: "#btn-nueva-materia",
-      content: "Haz clic aquí para crear una nueva materia. Podrás asignarle un nombre, una descripción y un color único.",
-      title: "Nueva Materia (1/4)",
-      disableBeacon: true,
-    },
-    {
-      target: "#nav-center-links",
-      content: "Usa estos enlaces para moverte por la aplicación. Aquí puedes ir al Dashboard para ver tus estadísticas y rendimiento global.",
-      title: "Navegación Principal (2/4)",
-    },
-    {
-      target: "#user-menu-btn",
-      content: "Haz clic en tu foto de perfil para acceder a tus ajustes, relanzar este tutorial en cualquier momento, o cerrar sesión.",
-      title: "Menú de Usuario (3/4)",
-    },
-    {
-      target: "#subjects-list-area",
-      content: "Aquí aparecerán tus materias. Al hacer clic en cualquiera de ellas, entrarás a estudiar y podrás chatear con la IA, subir documentos y resolver quizzes.",
-      title: "Tus Materias (4/4)",
-    }
-  ];
-
-  const joyrideStyles = {
-    options: {
-      arrowColor: "#fff",
-      backgroundColor: "#fff",
-      overlayColor: "rgba(91, 75, 73, 0.4)",
-      primaryColor: "#16697A",
-      textColor: "#5B4B49",
-      zIndex: 1000,
-    },
-    buttonNext: {
-      backgroundColor: "#16697A",
-      borderRadius: "12px",
-      fontSize: "14px",
-      fontWeight: "bold",
-      padding: "10px 18px",
-    },
-    buttonBack: {
-      color: "#77A0A9",
-      marginRight: "10px",
-      fontSize: "14px",
-      fontWeight: "bold",
-    },
-    buttonSkip: {
-      color: "#77A0A9",
-      fontSize: "14px",
-      fontWeight: "bold",
-    },
-    tooltipContainer: {
-      textAlign: "left",
-      borderRadius: "24px",
-      padding: "8px",
-    },
-    tooltipTitle: {
-      fontWeight: "900",
-      fontSize: "18px",
-      color: "#5B4B49",
-      marginBottom: "8px",
-    },
-    tooltipContent: {
-      fontSize: "14px",
-      color: "#77A0A9",
-    }
-  };
-
-  const handleJoyrideCallback = (data) => {
-    const { status } = data;
-    if (["finished", "skipped"].includes(status)) {
-      setRunTour(false);
-      localStorage.setItem("tutorial_subjects_done", "true");
-    }
   };
 
   const openEditModal = (e, subject) => {
@@ -130,29 +62,9 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSubjects();
     setIsMounted(true);
   }, [fetchSubjects]);
-
-  // Check localStorage for tutorial onboarding
-  useEffect(() => {
-    if (isMounted) {
-      const isDone = localStorage.getItem("tutorial_subjects_done");
-      if (!isDone) {
-        setRunTour(true);
-      }
-    }
-  }, [isMounted]);
-
-  // Listen to profile dropdown "Tutorial" click event
-  useEffect(() => {
-    const startTutorial = () => {
-      setRunTour(true);
-    };
-    window.addEventListener("run-page-tutorial", startTutorial);
-    return () => window.removeEventListener("run-page-tutorial", startTutorial);
-  }, []);
 
   const handleDeleteSubject = async (e, id, name) => {
     e.stopPropagation();
@@ -164,7 +76,9 @@ export default function DashboardPage() {
     if (!deletingId) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/subjects?id=${deletingId}`, { method: "DELETE" });
+      const res = await fetch(`/api/subjects?id=${deletingId}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Error al eliminar");
@@ -181,7 +95,7 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredSubjects = subjects.filter(s => {
+  const filteredSubjects = subjects.filter((s) => {
     const term = searchTerm.toLowerCase();
     return (
       s.name.toLowerCase().includes(term) ||
@@ -193,8 +107,12 @@ export default function DashboardPage() {
     <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-black text-brand-taupe tracking-tight">Mis Materias</h1>
-          <p className="text-brand-steel font-medium text-lg mt-1">Gestiona tus áreas de estudio y documentos</p>
+          <h1 className="text-4xl font-black text-brand-taupe tracking-tight">
+            Mis Materias
+          </h1>
+          <p className="text-brand-steel font-medium text-lg mt-1">
+            Gestiona tus áreas de estudio y documentos
+          </p>
         </div>
         <button
           id="btn-nueva-materia"
@@ -224,7 +142,9 @@ export default function DashboardPage() {
               <Loader2 className="h-16 w-16 animate-spin text-brand-teal opacity-20" />
               <Loader2 className="h-16 w-16 animate-spin text-brand-teal absolute inset-0 [animation-delay:-0.5s]" />
             </div>
-            <p className="text-brand-steel font-bold text-lg animate-pulse">Cargando tus materias...</p>
+            <p className="text-brand-steel font-bold text-lg animate-pulse">
+              Cargando tus materias...
+            </p>
           </div>
         ) : filteredSubjects.length === 0 ? (
           <div className="bg-white p-16 rounded-[2.5rem] border border-brand-steel/5 text-center shadow-sm">
@@ -235,7 +155,9 @@ export default function DashboardPage() {
               {searchTerm ? "No hay resultados" : "Tu biblioteca está vacía"}
             </h3>
             <p className="text-brand-steel font-medium max-w-xs mx-auto">
-              {searchTerm ? "Intenta con otro término de búsqueda." : "Comienza creando tu primera materia para organizar tus documentos."}
+              {searchTerm
+                ? "Intenta con otro término de búsqueda."
+                : "Comienza creando tu primera materia para organizar tus documentos."}
             </p>
             {!searchTerm && (
               <button
@@ -264,7 +186,9 @@ export default function DashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => handleDeleteSubject(e, subject.id, subject.name)}
+                    onClick={(e) =>
+                      handleDeleteSubject(e, subject.id, subject.name)
+                    }
                     disabled={deletingId === subject.id}
                     className="p-2.5 text-brand-steel/40 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                   >
@@ -288,9 +212,18 @@ export default function DashboardPage() {
                 </h3>
 
                 <div className="flex items-center gap-3 text-sm font-bold text-brand-steel/60">
-                  <span className="bg-brand-blush/20 px-3 py-1 rounded-lg truncate max-w-[200px]">{subject.description || "Sin descripción"}</span>
+                  <span className="bg-brand-blush/20 px-3 py-1 rounded-lg truncate max-w-[200px]">
+                    {subject.description || "Sin descripción"}
+                  </span>
                   <span className="w-1 h-1 bg-brand-steel/30 rounded-full"></span>
-                  <span>{isMounted ? new Date(subject.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}</span>
+                  <span>
+                    {isMounted
+                      ? new Date(subject.created_at).toLocaleDateString(
+                          undefined,
+                          { month: "short", day: "numeric" }
+                        )
+                      : ""}
+                  </span>
                 </div>
 
                 <div className="mt-8 flex items-center text-brand-teal font-bold text-sm opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
@@ -320,22 +253,16 @@ export default function DashboardPage() {
         onCancel={() => setDeletingId(null)}
       />
 
+      {/* react-joyride v3: usar onEvent en lugar de callback, y options.buttons para skip */}
       {isMounted && (
         <Joyride
-          steps={steps}
+          steps={subjectsSteps}
           run={runTour}
           continuous={true}
-          showSkipButton={true}
-          showCloseButton={false}
+          onEvent={handleJoyrideEvent}
           styles={joyrideStyles}
-          callback={handleJoyrideCallback}
-          locale={{
-            back: "Atrás",
-            close: "Cerrar",
-            last: "Finalizar",
-            next: "Siguiente",
-            skip: "Omitir"
-          }}
+          options={joyrideOptions}
+          locale={joyrideLocale}
         />
       )}
     </div>
