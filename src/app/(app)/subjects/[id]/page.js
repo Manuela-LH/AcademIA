@@ -34,7 +34,7 @@ const TECHNIQUES_DESC = {
 export default function SubjectChatPage({ params }) {
   const resolvedParams = use(params);
   const subjectId = resolvedParams.id;
-  
+
   const [subject, setSubject] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +50,7 @@ export default function SubjectChatPage({ params }) {
   const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
 
-  const { runTour, handleJoyrideEvent } = useTutorial("chat");
+  const { runTour, handleJoyrideEvent } = useTutorial("chat", hasApiKey);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function SubjectChatPage({ params }) {
   }, []);
 
   const supabase = createClient();
-// ... (fetchData and handleDeleteDoc stay the same)
+  // ... (fetchData and handleDeleteDoc stay the same)
   const fetchData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -162,15 +162,15 @@ export default function SubjectChatPage({ params }) {
       {/* Header - Fixed at top */}
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="flex items-center gap-4">
-          <Link 
-            href="/subjects" 
+          <Link
+            href="/subjects"
             className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe hover:text-brand-teal transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="flex items-center gap-2">
-            <div 
-              className="w-3 h-3 rounded-full" 
+            <div
+              className="w-3 h-3 rounded-full"
               style={{ backgroundColor: subject?.color || "#16697A" }}
             ></div>
             <h1 className="text-xl md:text-2xl font-black text-brand-taupe">{subject?.name}</h1>
@@ -186,13 +186,13 @@ export default function SubjectChatPage({ params }) {
 
           {/* Mobile Actions Toggle */}
           <div className="flex lg:hidden gap-2">
-            <button 
+            <button
               onClick={() => setIsDocsOpenMobile(true)}
               className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe active:bg-brand-blush/20"
             >
               <FileText className="h-5 w-5" />
             </button>
-            <button 
+            <button
               onClick={() => setIsQuizzesOpenMobile(true)}
               className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe active:bg-brand-blush/20"
             >
@@ -204,7 +204,7 @@ export default function SubjectChatPage({ params }) {
 
       {/* Main Content Grid */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 relative">
-        
+
         {/* LEFT SECTION: Documents (Desktop Sidebar / Mobile Overlay) */}
         <div id="material-section" className={`
           ${isDocsOpenMobile ? 'fixed inset-0 z-50 bg-white p-6 flex flex-col' : 'hidden'} 
@@ -231,8 +231,8 @@ export default function SubjectChatPage({ params }) {
               </div>
             ) : (
               documents.map((doc) => (
-                <div 
-                  key={doc.id} 
+                <div
+                  key={doc.id}
                   className="bg-white p-3 rounded-xl border border-brand-steel/10 flex items-center justify-between group hover:border-brand-teal/30 transition-colors shadow-sm"
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
@@ -271,7 +271,7 @@ export default function SubjectChatPage({ params }) {
                 <Key className="h-10 w-10 text-brand-teal mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-brand-taupe mb-2">API Key Requerida</h3>
                 <p className="text-sm text-brand-steel mb-6">Debes configurar tu API Key de Google Gemini para usar el tutor inteligente.</p>
-                <button 
+                <button
                   onClick={() => setIsApiKeyModalOpen(true)}
                   className="bg-brand-teal text-white font-bold py-2 px-4 rounded-lg hover:bg-[#0e4f5c] transition-colors w-full"
                 >
@@ -280,9 +280,9 @@ export default function SubjectChatPage({ params }) {
               </div>
             </div>
           )}
-          <ChatWindow 
-            subjectId={subjectId} 
-            hasApiKey={hasApiKey} 
+          <ChatWindow
+            subjectId={subjectId}
+            hasApiKey={hasApiKey}
             technique={technique}
             setTechnique={setTechnique}
             onRequestApiKey={() => setIsApiKeyModalOpen(true)}
@@ -300,7 +300,7 @@ export default function SubjectChatPage({ params }) {
               <ArrowLeft className="h-6 w-6 rotate-180" />
             </button>
           </div>
-          
+
           <div className="bg-white border border-brand-steel/10 p-5 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Info className="h-5 w-5 text-brand-pink" />
@@ -321,7 +321,7 @@ export default function SubjectChatPage({ params }) {
                 <BookOpen className="h-5 w-5 text-brand-teal" />
               </div>
             </div>
-            <Link 
+            <Link
               href={`/subjects/${subjectId}/quizzes`}
               className="w-full bg-brand-teal text-white font-semibold py-2 rounded-lg text-xs text-center hover:bg-[#0e4f5c] transition-colors"
             >
@@ -339,7 +339,7 @@ export default function SubjectChatPage({ params }) {
                 <Sparkles className="h-5 w-5 text-brand-teal" />
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setIsSuggestionOpen(true)}
               className="w-full bg-brand-teal text-white font-semibold py-2 rounded-lg text-xs text-center hover:bg-[#0e4f5c] transition-colors cursor-pointer"
             >
@@ -361,13 +361,13 @@ export default function SubjectChatPage({ params }) {
         onCancel={() => setDeletingDocId(null)}
       />
 
-      <ApiKeyModal 
-        isOpen={isApiKeyModalOpen} 
-        onClose={() => setIsApiKeyModalOpen(false)} 
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
         onSaveSuccess={() => {
           setHasApiKey(true);
           setIsApiKeyModalOpen(false);
-        }} 
+        }}
       />
 
       {/* Suggestions Modal */}
@@ -380,7 +380,7 @@ export default function SubjectChatPage({ params }) {
                   <Sparkles className="h-6 w-6 text-brand-teal animate-pulse" />
                   <h2 className="text-xl font-black text-brand-taupe">Sugerencias</h2>
                 </div>
-                <button 
+                <button
                   onClick={() => setIsSuggestionOpen(false)}
                   className="p-1 hover:bg-brand-blush/20 rounded-lg transition-colors text-brand-steel font-bold cursor-pointer"
                 >

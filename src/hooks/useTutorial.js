@@ -21,19 +21,21 @@ import { useState, useEffect, useCallback } from "react";
  * @param {string} key - Identificador único de la página (p.ej. "subjects")
  * @returns {{ runTour: boolean, handleJoyrideEvent: function }}
  */
-export default function useTutorial(key) {
+export default function useTutorial(key, ready = true) {
   const storageKey = `tutorial_${key}_done`;
   const [runTour, setRunTour] = useState(false);
 
   // Al montarse en el cliente, verificar si ya se vio el tutorial
   useEffect(() => {
+    if (!ready) return;
+
     const alreadyDone = localStorage.getItem(storageKey);
     if (!alreadyDone) {
       // Pequeño delay para asegurarnos de que los targets del DOM estén listos
       const timer = setTimeout(() => setRunTour(true), 400);
       return () => clearTimeout(timer);
     }
-  }, [storageKey]);
+  }, [storageKey, ready]);
 
   // Escuchar el evento global para relanzar el tutorial desde el navbar
   useEffect(() => {
