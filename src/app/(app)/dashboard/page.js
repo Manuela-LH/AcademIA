@@ -13,6 +13,19 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, Legend, PieChart, Pie
 } from "recharts";
+import dynamic from "next/dynamic";
+import useTutorial from "@/hooks/useTutorial";
+import {
+  dashboardSteps,
+  joyrideStyles,
+  joyrideOptions,
+  joyrideLocale,
+} from "@/components/tutorial/tutorialConfig";
+
+const Joyride = dynamic(
+  () => import("react-joyride").then((mod) => ({ default: mod.Joyride })),
+  { ssr: false }
+);
 
 function formatTime(seconds) {
   if (!seconds || seconds <= 0) return "0 min";
@@ -184,6 +197,13 @@ export default function DashboardPage() {
 
   const router = useRouter();
   const supabase = createClient();
+
+  const { runTour, handleJoyrideEvent } = useTutorial("dashboard");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Reset week when subject filter changes
   useEffect(() => {
@@ -465,6 +485,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl md:text-4xl font-black text-brand-taupe">Dashboard de Estudio</h1>
         </div>
         <select
+          id="subject-filter-select"
           value={selectedSubjectId}
           onChange={e => setSelectedSubjectId(e.target.value)}
           className="bg-white border border-brand-steel/20 text-brand-taupe text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal block w-full sm:w-auto p-3 shadow-sm font-bold cursor-pointer"
@@ -535,7 +556,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── Quiz performance ── */}
-        <section>
+        <section id="quiz-performance-section">
           <div className="flex items-center gap-2 mb-6">
             <CheckCircle className="h-6 w-6 text-brand-teal" />
             <h2 className="text-2xl font-bold text-brand-taupe">Rendimiento en Quizzes</h2>
@@ -777,6 +798,18 @@ export default function DashboardPage() {
         )}
 
       </div>
+
+      {isMounted && (
+        <Joyride
+          steps={dashboardSteps}
+          run={runTour}
+          continuous={true}
+          onEvent={handleJoyrideEvent}
+          styles={joyrideStyles}
+          options={joyrideOptions}
+          locale={joyrideLocale}
+        />
+      )}
     </div>
   );
 }

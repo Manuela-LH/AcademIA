@@ -9,6 +9,19 @@ import DeleteConfirmModal from "@/components/documents/DeleteConfirmModal";
 import ChatWindow from "@/components/chat/ChatWindow";
 import ApiKeyModal from "@/components/chat/ApiKeyModal";
 import { createClient } from "@/lib/supabase/client";
+import dynamic from "next/dynamic";
+import useTutorial from "@/hooks/useTutorial";
+import {
+  chatSteps,
+  joyrideStyles,
+  joyrideOptions,
+  joyrideLocale,
+} from "@/components/tutorial/tutorialConfig";
+
+const Joyride = dynamic(
+  () => import("react-joyride").then((mod) => ({ default: mod.Joyride })),
+  { ssr: false }
+);
 
 const TECHNIQUES_DESC = {
   neutral: "Explicación Estándar: Obtén respuestas claras y directas basadas en tus documentos.",
@@ -36,6 +49,13 @@ export default function SubjectChatPage({ params }) {
 
   const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
+
+  const { runTour, handleJoyrideEvent } = useTutorial("chat");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const supabase = createClient();
 // ... (fetchData and handleDeleteDoc stay the same)
@@ -186,7 +206,7 @@ export default function SubjectChatPage({ params }) {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 relative">
         
         {/* LEFT SECTION: Documents (Desktop Sidebar / Mobile Overlay) */}
-        <div className={`
+        <div id="material-section" className={`
           ${isDocsOpenMobile ? 'fixed inset-0 z-50 bg-white p-6 flex flex-col' : 'hidden'} 
           lg:relative lg:inset-auto lg:z-0 lg:bg-transparent lg:p-0 lg:col-span-2 lg:flex lg:flex-col min-h-0 space-y-4
         `}>
@@ -244,7 +264,7 @@ export default function SubjectChatPage({ params }) {
         </div>
 
         {/* CENTER SECTION: Chat Window (Main Content) */}
-        <div className="lg:col-span-8 flex flex-col min-h-0 relative">
+        <div id="chatbot-area" className="lg:col-span-8 flex flex-col min-h-0 relative">
           {!hasApiKey && (
             <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center rounded-2xl border border-brand-steel/20">
               <div className="bg-white p-6 rounded-2xl shadow-lg border border-brand-steel/10 text-center max-w-sm">
@@ -291,7 +311,7 @@ export default function SubjectChatPage({ params }) {
             </p>
           </div>
 
-          <div className="bg-white border border-brand-steel/10 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-center">
+          <div id="quizzes-section" className="bg-white border border-brand-steel/10 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-center">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-bold text-sm text-brand-taupe mb-1">Cuestionarios</h3>
@@ -309,7 +329,7 @@ export default function SubjectChatPage({ params }) {
             </Link>
           </div>
 
-          <div className="bg-white border border-brand-steel/10 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-center">
+          <div id="suggestions-section" className="bg-white border border-brand-steel/10 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-center">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-bold text-sm text-brand-taupe mb-1">Sugerencias</h3>
@@ -418,6 +438,18 @@ export default function SubjectChatPage({ params }) {
             </div>
           </div>
         </div>
+      )}
+
+      {isMounted && (
+        <Joyride
+          steps={chatSteps}
+          run={runTour}
+          continuous={true}
+          onEvent={handleJoyrideEvent}
+          styles={joyrideStyles}
+          options={joyrideOptions}
+          locale={joyrideLocale}
+        />
       )}
     </div>
   );

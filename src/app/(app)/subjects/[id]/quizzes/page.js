@@ -7,6 +7,19 @@ import { BookOpen, Plus, Loader2, Clock, Target, Trash2, Eye, Pencil } from "luc
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import DeleteConfirmModal from "@/components/documents/DeleteConfirmModal";
+import dynamic from "next/dynamic";
+import useTutorial from "@/hooks/useTutorial";
+import {
+  quizzesSteps,
+  joyrideStyles,
+  joyrideOptions,
+  joyrideLocale,
+} from "@/components/tutorial/tutorialConfig";
+
+const Joyride = dynamic(
+  () => import("react-joyride").then((mod) => ({ default: mod.Joyride })),
+  { ssr: false }
+);
 
 export default function QuizzesPage({ params }) {
   const resolvedParams = use(params);
@@ -25,6 +38,13 @@ export default function QuizzesPage({ params }) {
   const [editingQuiz, setEditingQuiz] = useState(null);
   const [editQuizName, setEditQuizName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
+
+  const { runTour, handleJoyrideEvent } = useTutorial("quizzes");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -168,6 +188,7 @@ export default function QuizzesPage({ params }) {
           </div>
         </div>
         <button
+          id="btn-nuevo-cuestionario"
           onClick={handleGenerateQuiz}
           disabled={isGenerating}
           className="flex items-center justify-center gap-2 bg-brand-teal text-white px-6 py-3 md:py-4 rounded-2xl font-bold hover:bg-[#0e4f5c] transition-all shadow-lg shadow-brand-teal/20 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -192,7 +213,7 @@ export default function QuizzesPage({ params }) {
           <p className="text-brand-steel font-bold">Cargando cuestionarios...</p>
         </div>
       ) : quizzes.length === 0 ? (
-        <div className="bg-white p-16 rounded-[2.5rem] border border-brand-steel/5 text-center shadow-sm">
+        <div id="quizzes-list-area" className="bg-white p-16 rounded-[2.5rem] border border-brand-steel/5 text-center shadow-sm">
           <div className="w-20 h-20 bg-brand-blush/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
             <BookOpen className="h-10 w-10 text-brand-steel opacity-40" />
           </div>
@@ -204,7 +225,7 @@ export default function QuizzesPage({ params }) {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div id="quizzes-list-area" className="space-y-3">
           {quizzes.map((quiz) => (
             <div
               key={quiz.id}
@@ -311,6 +332,18 @@ export default function QuizzesPage({ params }) {
             setEditingQuiz(null);
             setEditQuizName("");
           }}
+        />
+      )}
+
+      {isMounted && (
+        <Joyride
+          steps={quizzesSteps}
+          run={runTour}
+          continuous={true}
+          onEvent={handleJoyrideEvent}
+          styles={joyrideStyles}
+          options={joyrideOptions}
+          locale={joyrideLocale}
         />
       )}
     </div>
