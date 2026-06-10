@@ -11,7 +11,7 @@ import Navbar from "@/components/Navbar";
 export default function RegisterPage() {
   const router = useRouter();
   const supabase = createClient();
-  
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +20,7 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    
+
     if (password !== passwordConfirm) {
       toast.error("Las contraseñas no coinciden");
       return;
@@ -50,7 +50,7 @@ export default function RegisterPage() {
         return;
       }
 
-      toast.success("¡Registro exitoso! Verifica tu correo electrónico o inicia sesión.");
+      toast.success("¡Registro exitoso!");
       router.push("/login");
     } catch (err) {
       toast.error("Ocurrió un error inesperado.");
@@ -62,7 +62,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col bg-brand-blush/20 font-sans">
       <Navbar showAuthButtons={false} />
-      
+
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-brand-steel/10 p-8">
           <div className="flex flex-col items-center mb-8">
@@ -120,7 +120,7 @@ export default function RegisterPage() {
                 placeholder="••••••••"
               />
             </div>
-            
+
             <div>
               <label htmlFor="passwordConfirm" className="block text-sm font-bold text-brand-taupe mb-1.5">
                 Confirmar Contraseña

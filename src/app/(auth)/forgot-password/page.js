@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
       }
 
       setSent(true);
-      toast.success("Correo enviado. Si el correo está registrado y verificado, recibirás un enlace para restablecer tu contraseña.");
+      toast.success("Correo enviado. Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.");
     } catch (err) {
       toast.error("Ocurrió un error inesperado.");
     } finally {
@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
           {sent ? (
             <div className="text-center">
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                Si el correo ingresado está registrado y verificado, recibirás un enlace para restablecer tu contraseña.
+                Si el correo ingresado está registrado, recibirás un enlace para restablecer tu contraseña.
                 Revisa también tu bandeja de spam.
               </div>
             </div>

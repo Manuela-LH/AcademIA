@@ -26,13 +26,7 @@ export default function LoginPage() {
       });
 
       if (error) {
-        if (error.message === "Email not confirmed") {
-          toast.error(
-            "Tu correo electrónico aún no ha sido confirmado. Revisa tu bandeja de entrada y confirma tu cuenta antes de iniciar sesión."
-          );
-        } else {
-          toast.error("Error al iniciar sesión: " + error.message);
-        }
+        toast.error("Error al iniciar sesión: " + error.message);
         return;
       }
 
