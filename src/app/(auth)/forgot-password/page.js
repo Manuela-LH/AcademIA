@@ -18,6 +18,25 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
+      // Verificar si el correo existe antes de enviar
+      const checkRes = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const checkData = await checkRes.json();
+
+      if (!checkRes.ok) {
+        toast.error("Error al verificar el correo.");
+        return;
+      }
+
+      if (!checkData.exists) {
+        toast.error("No hay una cuenta existente en el sistema con ese correo.");
+        return;
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       });
@@ -28,7 +47,7 @@ export default function ForgotPasswordPage() {
       }
 
       setSent(true);
-      toast.success("Correo enviado. Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.");
+      toast.success("Correo enviado. Recibirás un enlace para restablecer tu contraseña.");
     } catch (err) {
       toast.error("Ocurrió un error inesperado.");
     } finally {

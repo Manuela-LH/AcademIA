@@ -21,6 +21,12 @@ export default function RegisterPage() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Ingresa un correo electrónico válido.");
+      return;
+    }
+
     if (password !== passwordConfirm) {
       toast.error("Las contraseñas no coinciden");
       return;
@@ -84,6 +90,7 @@ export default function RegisterPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
+                maxLength={100}
                 className="w-full px-4 py-2.5 border border-brand-steel/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-teal/50 transition-all font-medium"
                 placeholder="Tu Nombre"
               />

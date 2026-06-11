@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { extractTextFromFile } from "@/lib/rag/extractor";
 import { createChunks } from "@/lib/rag/chunker";
 
+export const maxBodySize = 10 * 1024 * 1024; // 10 MB
+
 export async function POST(req) {
   try {
     const formData = await req.formData();
@@ -13,6 +15,10 @@ export async function POST(req) {
 
     if (!file || !subjectId) {
       return NextResponse.json({ error: "Falta el archivo o el subjectId." }, { status: 400 });
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "El archivo excede el límite de 10 MB permitido." }, { status: 400 });
     }
 
     // 1. Verificar Autenticación

@@ -145,33 +145,27 @@ export default function QuizPlayPage({ params }) {
 
   return (
     <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 overflow-y-auto custom-scrollbar pb-10">
-      <div className="flex items-center justify-between mb-8 shrink-0">
-        <div className="flex items-center gap-4">
-          <Link 
-            href={`/subjects/${subjectId}/quizzes`}
-            className="p-2 bg-white border border-brand-steel/10 rounded-lg text-brand-taupe hover:text-brand-teal transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-brand-taupe">{quiz.name}</h1>
-            <p className="text-sm text-brand-steel hidden sm:block">
-              Evalúa tu comprensión del material
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 flex flex-col">
         {questions.length > 0 && (
           <>
-            <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-brand-steel/10 shadow-sm sticky top-0 z-10 mb-6">
-              <span className="font-bold text-brand-taupe">
-                Progreso: {answersCount} / {questions.length}
-              </span>
-              <div className="flex items-center gap-2 bg-brand-teal/10 text-brand-teal px-3 py-1.5 rounded-full font-bold text-sm shadow-sm">
-                <Clock className="h-4 w-4" />
-                <span>{displayTime}</span>
+            <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-brand-steel/10 shadow-sm sticky top-0 z-10 mb-6">
+              <Link 
+                href={`/subjects/${subjectId}/quizzes`}
+                className="p-2 bg-white border border-brand-steel/10 rounded-lg text-brand-taupe hover:text-brand-teal transition-colors shrink-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+              <div className="flex-1 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h1 className="text-lg md:text-xl font-black text-brand-taupe truncate">{quiz.name}</h1>
+                  <span className="font-bold text-brand-steel text-sm">
+                    Progreso: {answersCount} / {questions.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 bg-brand-teal/10 text-brand-teal px-3 py-1.5 rounded-full font-bold text-sm shadow-sm shrink-0">
+                  <Clock className="h-4 w-4" />
+                  <span>{displayTime}</span>
+                </div>
               </div>
             </div>
 

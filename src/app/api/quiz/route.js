@@ -51,7 +51,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { subjectId } = await req.json();
+    const { subjectId, timeZone } = await req.json();
 
     if (!subjectId) {
       return NextResponse.json({ error: "Faltan parámetros requeridos (subjectId)" }, { status: 400 });
@@ -100,10 +100,11 @@ export async function POST(req) {
     }
 
     const now = new Date();
-    const quizName = `Cuestionario - ${now.toLocaleDateString(undefined, { 
-      year: 'numeric', month: 'short', day: 'numeric' 
-    })}, ${now.toLocaleTimeString(undefined, { 
-      hour: '2-digit', minute: '2-digit' 
+    const tz = timeZone || "UTC";
+    const quizName = `Cuestionario - ${now.toLocaleDateString("es-ES", { 
+      year: 'numeric', month: 'short', day: 'numeric', timeZone: tz
+    })}, ${now.toLocaleTimeString("es-ES", { 
+      hour: '2-digit', minute: '2-digit', timeZone: tz
     })}`;
 
     const { data: quizData, error: quizError } = await supabase

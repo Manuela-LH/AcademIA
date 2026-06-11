@@ -17,8 +17,16 @@ export default function FileUploader({ subjectId, onUploadSuccess }) {
     }
   }, []);
 
+  const onDropRejected = useCallback((rejections) => {
+    const rejection = rejections[0];
+    if (rejection?.errors?.[0]?.code === "file-too-large") {
+      toast.error("El archivo excede el límite de 10 MB permitido.");
+    }
+  }, []);
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: {
       'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
@@ -28,7 +36,8 @@ export default function FileUploader({ subjectId, onUploadSuccess }) {
       'image/*': ['.png', '.jpg', '.jpeg']
     },
     maxFiles: 1,
-    multiple: false
+    multiple: false,
+    maxSize: 10 * 1024 * 1024
   });
 
   const handleUpload = async () => {
@@ -44,6 +53,10 @@ export default function FileUploader({ subjectId, onUploadSuccess }) {
         method: "POST",
         body: formData,
       });
+
+      if (res.status === 413) {
+        throw new Error("El archivo excede el límite de 10 MB permitido.");
+      }
 
       const data = await res.json();
 

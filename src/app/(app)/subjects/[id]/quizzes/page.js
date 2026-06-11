@@ -78,7 +78,10 @@ export default function QuizzesPage({ params }) {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subjectId })
+        body: JSON.stringify({
+          subjectId,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        })
       });
 
       const data = await res.json();
@@ -276,7 +279,7 @@ export default function QuizzesPage({ params }) {
                     })()
                   )}
                 </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

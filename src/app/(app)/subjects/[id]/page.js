@@ -251,7 +251,8 @@ export default function SubjectChatPage({ params }) {
           </div>
 
           <div className="shrink-0 bg-white p-4 rounded-2xl border border-brand-steel/10 shadow-sm">
-            <h2 className="text-sm font-bold text-brand-taupe mb-3">Material</h2>
+            <h2 className="text-sm font-bold text-brand-taupe mb-1">Material</h2>
+            <p className="text-[10px] text-brand-steel mb-3">Máx. 10 MB por archivo</p>
             <FileUploader subjectId={subjectId} onUploadSuccess={fetchData} />
           </div>
 

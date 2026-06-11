@@ -233,6 +233,7 @@ export default function SettingsPage() {
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Tu nombre"
                   disabled={isSavingName}
+                  maxLength={100}
                   className="w-full px-4 py-2.5 border border-brand-steel/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/50 transition-all font-medium disabled:opacity-60 bg-white text-brand-taupe"
                 />
                 <p className="text-xs text-brand-steel mt-1.5">

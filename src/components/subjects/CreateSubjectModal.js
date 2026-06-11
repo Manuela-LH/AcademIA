@@ -87,6 +87,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onSuccess, editing
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Cálculo Integral, Historia..."
+              maxLength={100}
               className="w-full px-4 py-3.5 bg-brand-blush/10 border border-brand-steel/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/20 transition-all font-medium"
             />
           </div>
@@ -98,6 +99,7 @@ export default function CreateSubjectModal({ isOpen, onClose, onSuccess, editing
               onChange={(e) => setDescription(e.target.value)}
               placeholder="¿Qué estudiarás aquí?"
               rows={3}
+              maxLength={500}
               className="w-full px-4 py-3.5 bg-brand-blush/10 border border-brand-steel/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/20 transition-all resize-none font-medium"
             />
           </div>

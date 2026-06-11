@@ -30,7 +30,7 @@ export default function LoginPage() {
         return;
       }
 
-      toast.success("¡Bienvenido de nuevo!");
+      toast.success("¡Bienvenido!");
       router.push("/subjects");
       router.refresh();
     } catch (err) {
@@ -43,7 +43,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-brand-blush/20 font-sans">
       <Navbar showAuthButtons={false} />
-      
+
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-brand-steel/10 p-8">
           <div className="flex flex-col items-center mb-8">
