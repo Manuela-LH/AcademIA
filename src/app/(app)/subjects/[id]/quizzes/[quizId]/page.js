@@ -148,24 +148,22 @@ export default function QuizPlayPage({ params }) {
       <div className="flex-1 flex flex-col">
         {questions.length > 0 && (
           <>
-            <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-brand-steel/10 shadow-sm sticky top-0 z-10 mb-6">
+            <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-brand-steel/10 shadow-sm sticky top-0 z-10 mb-6">
               <Link 
                 href={`/subjects/${subjectId}/quizzes`}
                 className="p-2 bg-white border border-brand-steel/10 rounded-lg text-brand-taupe hover:text-brand-teal transition-colors shrink-0"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
-              <div className="flex-1 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h1 className="text-lg md:text-xl font-black text-brand-taupe truncate">{quiz.name}</h1>
-                  <span className="font-bold text-brand-steel text-sm">
-                    Progreso: {answersCount} / {questions.length}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 bg-brand-teal/10 text-brand-teal px-3 py-1.5 rounded-full font-bold text-sm shadow-sm shrink-0">
-                  <Clock className="h-4 w-4" />
-                  <span>{displayTime}</span>
-                </div>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base md:text-xl font-black text-brand-taupe truncate">{quiz.name}</h1>
+                <span className="font-bold text-brand-steel text-xs md:text-sm">
+                  Progreso: {answersCount} / {questions.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-brand-teal/10 text-brand-teal px-2.5 py-1.5 rounded-full font-bold text-xs md:text-sm shadow-sm shrink-0 whitespace-nowrap">
+                <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>{displayTime}</span>
               </div>
             </div>
 
