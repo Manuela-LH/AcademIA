@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from "react";
+import { use, useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, FileText, Loader2, Trash2, Info, Key, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -52,10 +52,41 @@ export default function SubjectChatPage({ params }) {
 
   const { runTour, handleJoyrideEvent } = useTutorial("chat", hasApiKey);
   const [isMounted, setIsMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const steps = useMemo(() => {
+    if (isMobile) {
+      return [
+        { ...chatSteps[0], title: "Chat con la IA (1/3)" },
+        {
+          target: "#btn-mobile-docs",
+          content: chatSteps[1].content,
+          title: "Material de Estudio (2/3)",
+          disableBeacon: true,
+          placement: "bottom",
+        },
+        {
+          target: "#btn-mobile-quizzes",
+          content: "Aquí puedes entrar a la página de cuestionarios, donde puedes crear y resolver quizzes basados en tus materiales de estudio. Y también puedes observar la sugerencia generada para esta materia, y puedes volver a generar una nueva sugerencia basada en tu progreso.",
+          title: "Cuestionarios y Sugerencias (3/3)",
+          disableBeacon: true,
+          placement: "bottom",
+        },
+      ];
+    }
+    return chatSteps;
+  }, [isMobile]);
 
   const supabase = createClient();
   // ... (fetchData and handleDeleteDoc stay the same)
@@ -161,19 +192,19 @@ export default function SubjectChatPage({ params }) {
     <div className="h-full flex flex-col animate-in fade-in duration-500 overflow-hidden">
       {/* Header - Fixed at top */}
       <div className="flex items-center justify-between mb-6 shrink-0">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <Link
             href="/subjects"
             className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe hover:text-brand-teal transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <div
-              className="w-3 h-3 rounded-full"
+              className="w-3 h-3 rounded-full shrink-0"
               style={{ backgroundColor: subject?.color || "#16697A" }}
             ></div>
-            <h1 className="text-xl md:text-2xl font-black text-brand-taupe">{subject?.name}</h1>
+            <h1 className="text-xl md:text-2xl font-black text-brand-taupe truncate">{subject?.name}</h1>
           </div>
         </div>
 
@@ -187,12 +218,14 @@ export default function SubjectChatPage({ params }) {
           {/* Mobile Actions Toggle */}
           <div className="flex lg:hidden gap-2">
             <button
+              id="btn-mobile-docs"
               onClick={() => setIsDocsOpenMobile(true)}
               className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe active:bg-brand-blush/20"
             >
               <FileText className="h-5 w-5" />
             </button>
             <button
+              id="btn-mobile-quizzes"
               onClick={() => setIsQuizzesOpenMobile(true)}
               className="p-2 bg-white border border-brand-steel/20 rounded-lg text-brand-taupe active:bg-brand-blush/20"
             >
@@ -442,7 +475,7 @@ export default function SubjectChatPage({ params }) {
 
       {isMounted && (
         <Joyride
-          steps={chatSteps}
+          steps={steps}
           run={runTour}
           continuous={true}
           onEvent={handleJoyrideEvent}

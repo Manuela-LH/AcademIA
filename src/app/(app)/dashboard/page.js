@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
   Loader2, LayoutDashboard, CheckCircle, Clock, Target, Hash,
   BarChart3, TrendingUp, Layers, HelpCircle, ChevronLeft, ChevronRight,
-  Sparkles
+  ChevronDown, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -45,6 +45,7 @@ function CalendarHeatmap({ quizzes, chatSessions }) {
 
   const [viewYear, setViewYear] = useState(currentYear);
   const [viewMonthIdx, setViewMonthIdx] = useState(currentMonth);
+  const [selectedDay, setSelectedDay] = useState(null);
 
   const canGoNext =
     viewYear < currentYear ||
@@ -160,18 +161,31 @@ function CalendarHeatmap({ quizzes, chatSessions }) {
               key={idx}
               className={[
                 "h-8 flex items-center justify-center rounded-md",
-                "text-[11px] font-semibold transition-transform hover:scale-110 cursor-default",
+                "text-[11px] font-semibold transition-transform hover:scale-110",
+                selectedDay?.day === cell.day ? "ring-2 ring-brand-teal scale-110" : "cursor-default",
                 cellBg(cell.minutes, cell.isFuture),
                 cellText(cell.minutes, cell.isFuture),
-                cell.isToday ? "ring-2 ring-brand-teal" : "",
+                cell.isToday && selectedDay?.day !== cell.day ? "ring-2 ring-brand-teal" : "",
               ].join(" ")}
               title={cell.isFuture ? "" : `${cell.day} – ${cell.minutes} min de estudio`}
+              onClick={() => {
+                if (!cell.isFuture) {
+                  setSelectedDay(selectedDay?.day === cell.day ? null : { day: cell.day, minutes: cell.minutes });
+                }
+              }}
             >
               {cell.day}
             </div>
           );
         })}
       </div>
+
+      {/* Selected day info */}
+      {selectedDay && (
+        <div className="mt-3 text-center text-xs font-semibold text-brand-taupe bg-brand-blush/10 rounded-lg py-1.5 px-3">
+          Día {selectedDay.day} – {selectedDay.minutes} min de estudio
+        </div>
+      )}
 
       {/* Legend */}
       <div className="flex items-center gap-1.5 justify-end mt-3 text-[10px] font-bold text-brand-steel/60">
@@ -194,6 +208,18 @@ export default function DashboardPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState("all");
   const [chartWeekOffset, setChartWeekOffset] = useState(0);
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
+  const subjectDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (subjectDropdownRef.current && !subjectDropdownRef.current.contains(e.target)) {
+        setIsSubjectDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const router = useRouter();
   const supabase = createClient();
@@ -484,15 +510,40 @@ export default function DashboardPage() {
           <LayoutDashboard className="h-8 w-8 text-brand-teal" />
           <h1 className="text-3xl md:text-4xl font-black text-brand-taupe">Dashboard de Estudio</h1>
         </div>
-        <select
-          id="subject-filter-select"
-          value={selectedSubjectId}
-          onChange={e => setSelectedSubjectId(e.target.value)}
-          className="bg-white border border-brand-steel/20 text-brand-taupe text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal block w-full sm:w-auto p-3 shadow-sm font-bold cursor-pointer"
-        >
-          <option value="all">Todas las materias</option>
-          {rawData.subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        <div className="relative w-full sm:max-w-[200px]" ref={subjectDropdownRef}>
+          <button
+            id="subject-filter-select"
+            type="button"
+            onClick={() => setIsSubjectDropdownOpen(prev => !prev)}
+            className="w-full bg-white border border-brand-steel/20 text-brand-taupe text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal p-3 shadow-sm font-bold cursor-pointer truncate flex items-center justify-between gap-2"
+          >
+            <span className="truncate">
+              {selectedSubjectId === "all" ? "Todas las materias" : selectedSubjectName}
+            </span>
+            <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isSubjectDropdownOpen ? "rotate-180" : ""}`} />
+          </button>
+          {isSubjectDropdownOpen && (
+            <div className="absolute z-50 mt-1 w-full bg-white border border-brand-steel/20 rounded-xl shadow-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => { setSelectedSubjectId("all"); setIsSubjectDropdownOpen(false); }}
+                className={`w-full text-left p-3 text-sm font-bold truncate hover:bg-brand-blush/10 transition-colors ${selectedSubjectId === "all" ? "bg-brand-teal/10 text-brand-teal" : "text-brand-taupe"}`}
+              >
+                Todas las materias
+              </button>
+              {rawData.subjects.map(s => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => { setSelectedSubjectId(s.id); setIsSubjectDropdownOpen(false); }}
+                  className={`w-full text-left p-3 text-sm font-bold truncate hover:bg-brand-blush/10 transition-colors ${selectedSubjectId === s.id ? "bg-brand-teal/10 text-brand-teal" : "text-brand-taupe"}`}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-12">
@@ -642,9 +693,9 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
                         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 11 }} dy={10} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 12 }} domain={[0, 100]} dx={-10} />
-                        <Tooltip cursor={chartTooltipStyle.cursor} contentStyle={chartTooltipStyle.contentStyle} labelStyle={chartTooltipStyle.labelStyle} />
+                        <Tooltip cursor={chartTooltipStyle.cursor} contentStyle={chartTooltipStyle.contentStyle} labelStyle={chartTooltipStyle.labelStyle} labelFormatter={(label) => label.length > 20 ? label.slice(0, 20) + '...' : label} />
                         <Legend wrapperStyle={{ paddingTop: "10px" }} />
-                        <Line type="monotone" dataKey="subjectScore" name={`Puntaje ${selectedSubjectName}`} stroke={selectedSubjectColor} strokeWidth={3} dot={{ fill: selectedSubjectColor, strokeWidth: 2, r: 4 }} activeDot={{ r: 6, fill: "#DB93B0", stroke: "#fff" }} />
+                        <Line type="monotone" dataKey="subjectScore" name={`Puntaje ${selectedSubjectName.length > 15 ? selectedSubjectName.slice(0, 15) + '...' : selectedSubjectName}`} stroke={selectedSubjectColor} strokeWidth={3} dot={{ fill: selectedSubjectColor, strokeWidth: 2, r: 4 }} activeDot={{ r: 6, fill: "#DB93B0", stroke: "#fff" }} />
                         <Line type="monotone" dataKey="generalAverage" name="Promedio General" stroke="#77A0A9" strokeWidth={2} strokeDasharray="5 5" dot={{ fill: "#77A0A9", strokeWidth: 1, r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
@@ -708,7 +759,7 @@ export default function DashboardPage() {
                       {donutData.map((entry, i) => (
                         <div key={i} className="flex items-center gap-1.5">
                           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                          <span className="text-xs text-brand-steel font-medium">{entry.name}</span>
+                          <span className="text-xs text-brand-steel font-medium truncate max-w-[100px]" title={entry.name}>{entry.name}</span>
                         </div>
                       ))}
                     </div>
@@ -721,7 +772,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Calendar Heatmap */}
-              <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[400px] flex flex-col">
+              <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm min-h-[400px] flex flex-col">
                 <h3 className="text-lg font-bold text-brand-taupe mb-1">Actividad por Mes</h3>
                 <p className="text-xs text-brand-steel mb-4">Minutos de estudio por día. Navega entre meses anteriores.</p>
                 <div className="flex-1 flex items-start justify-center">
@@ -736,12 +787,13 @@ export default function DashboardPage() {
 
             {/* Row 2: Stacked bar – ONLY for "all subjects" view */}
             {selectedSubjectId === "all" && timeDataBySubject.length > 0 && (
-              <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px]">
-                <h3 className="text-lg font-bold text-brand-taupe mb-4">
+              <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[400px] lg:h-[350px] flex flex-col overflow-hidden">
+                <h3 className="text-lg font-bold text-brand-taupe mb-4 shrink-0">
                   Tiempo de Estudio Acumulado por Materia (minutos)
                 </h3>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={timeDataBySubject} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                <div className="flex-1 min-h-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={timeDataBySubject} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
                     <XAxis
                       dataKey="name"
@@ -751,16 +803,18 @@ export default function DashboardPage() {
                       dy={10}
                       angle={timeDataBySubject.length > 3 ? -30 : 0}
                       textAnchor={timeDataBySubject.length > 3 ? "end" : "middle"}
+                      tickFormatter={(value) => value.length > 12 ? value.slice(0, 12) + '...' : value}
                     />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 12 }} dx={-10} />
-                    <Tooltip cursor={{ fill: "#77A0A910" }} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }} />
+                    <Tooltip cursor={{ fill: "#77A0A910" }} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }} labelFormatter={(label) => label.length > 15 ? label.slice(0, 15) + '...' : label} />
                     <Legend wrapperStyle={{ paddingTop: "20px" }} />
                     <Bar dataKey="Chat IA" stackId="a" fill="#16697A" radius={[0, 0, 4, 4]} maxBarSize={50} />
                     <Bar dataKey="Quizzes" stackId="a" fill="#DB93B0" radius={[4, 4, 0, 0]} maxBarSize={50} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            )}
+            </div>
+          )}
           </div>
         </section>
 
@@ -771,9 +825,9 @@ export default function DashboardPage() {
               <BarChart3 className="h-6 w-6 text-brand-teal" />
               <h2 className="text-2xl font-bold text-brand-taupe">Dominio por Materia</h2>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px]">
+            <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px] overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectStats} margin={{ top: 20, right: 30, left: 0, bottom: 40 }}>
+                <BarChart data={subjectStats} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
                   <XAxis
                     dataKey="name"
@@ -783,9 +837,10 @@ export default function DashboardPage() {
                     dy={10}
                     angle={-30}
                     textAnchor="end"
+                    tickFormatter={(value) => value.length > 12 ? value.slice(0, 12) + '...' : value}
                   />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 12 }} domain={[0, 100]} dx={-10} />
-                  <Tooltip cursor={{ fill: "#77A0A910" }} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }} />
+                  <Tooltip cursor={{ fill: "#77A0A910" }} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }} labelFormatter={(label) => label.length > 15 ? label.slice(0, 15) + '...' : label} />
                   <Bar dataKey="score" radius={[6, 6, 0, 0]} maxBarSize={60}>
                     {subjectStats.map((entry, i) => (
                       <Cell key={`cell-${i}`} fill={entry.fill} />

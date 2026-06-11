@@ -169,20 +169,20 @@ export default function QuizzesPage({ params }) {
   return (
     <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <Link 
             href={`/subjects/${subjectId}`}
-            className="p-3 bg-white border border-brand-steel/10 rounded-xl text-brand-taupe hover:text-brand-teal hover:border-brand-teal/30 transition-all"
+            className="p-3 bg-white border border-brand-steel/10 rounded-xl text-brand-taupe hover:text-brand-teal hover:border-brand-teal/30 transition-all shrink-0"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-3xl md:text-4xl font-black text-brand-taupe tracking-tight">
               Cuestionarios
             </h1>
-            <p className="text-brand-steel font-medium">
+            <p className="text-brand-steel font-medium truncate">
               {subject?.name || "Cargando..."}
             </p>
           </div>

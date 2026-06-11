@@ -18,7 +18,7 @@ export default function ApiKeyModal({ isOpen, onClose, onSaveSuccess }) {
       toast.error("Por favor, ingresa una API Key.");
       return;
     }
-    
+
     setIsVerifying(true);
     try {
       const res = await fetch("/api/verify-key", {
@@ -47,14 +47,14 @@ export default function ApiKeyModal({ isOpen, onClose, onSaveSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-taupe/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl border border-brand-steel/20 animate-in fade-in zoom-in duration-200">
-        
+
         {/* Header */}
         <div className="bg-brand-blush/20 p-4 border-b border-brand-steel/20 flex justify-between items-center">
           <div className="flex items-center gap-2 text-brand-teal font-bold">
             <Key className="h-5 w-5" />
             <span>Configurar Gemini API</span>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="text-brand-steel hover:text-brand-taupe transition-colors"
             disabled={isVerifying}
@@ -65,11 +65,22 @@ export default function ApiKeyModal({ isOpen, onClose, onSaveSuccess }) {
 
         {/* Body */}
         <div className="p-6">
-          <p className="text-brand-taupe text-sm mb-4">
-            AcademIA utiliza el modelo <strong>Gemini 2.5 Flash</strong> para funcionar. 
-            Como este es un proyecto académico, necesitas proveer tu propia API Key gratuita.
-          </p>
-          
+          <div className="text-brand-taupe text-sm mb-4 space-y-1">
+            <p>
+              AcademIA utiliza el modelo <strong>Gemini 2.5 Flash</strong> para funcionar.
+              Como este es un proyecto académico, necesitas proveer tu propia API Key gratuita.
+            </p>
+            <p className="font-medium text-brand-teal mt-3 mb-1">Pasos para obtenerla:</p>
+            <ol className="list-decimal list-inside space-y-0.5">
+              <li>Ve al link en la parte inferior.</li>
+              <li>Inicia sesión con tu cuenta de Google</li>
+              <li>Haz clic en "Create API Key"</li>
+              <li>Selecciona o crea un proyecto en Google Cloud</li>
+              <li>Copia la clave generada (empieza con "AIzaSy...")</li>
+              <li>Pégala aquí abajo y presiona "Verificar y Guardar"</li>
+            </ol>
+          </div>
+
           <form onSubmit={handleSave} className="space-y-4">
             <div>
               <label htmlFor="apiKey" className="block text-sm font-medium text-brand-taupe mb-1">
@@ -85,10 +96,10 @@ export default function ApiKeyModal({ isOpen, onClose, onSaveSuccess }) {
                 className="w-full px-4 py-2 border border-brand-steel/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-teal disabled:opacity-50"
               />
             </div>
-            
-            <a 
-              href="https://aistudio.google.com/app/apikey" 
-              target="_blank" 
+
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-brand-teal flex items-center gap-1 hover:underline w-max"
             >

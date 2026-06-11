@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Plus, Search, Loader2, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +35,32 @@ export default function DashboardPage() {
 
   // Hook de tutorial — gestiona runTour, localStorage y el evento del navbar
   const { runTour, handleJoyrideEvent } = useTutorial("subjects");
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const steps = useMemo(() => {
+    if (isMobile) {
+      return [
+        subjectsSteps[0],
+        {
+          target: "#user-menu-btn",
+          content:
+            "Los enlaces de navegación (Mis Materias, Dashboard) se encuentran dentro del menú de perfil. Haz clic en tu foto para acceder a ellos.",
+          title: "Navegación Principal (2/3)",
+          disableBeacon: true,
+        },
+        subjectsSteps[2],
+      ];
+    }
+    return subjectsSteps;
+  }, [isMobile]);
 
   const openCreateModal = () => {
     setEditingSubject(null);
@@ -176,7 +202,7 @@ export default function DashboardPage() {
                 onClick={() => router.push(`/subjects/${subject.id}`)}
                 className="group relative bg-white p-8 rounded-[2rem] border border-brand-steel/5 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer"
               >
-                <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all z-10">
+                <div className="absolute top-6 right-6 flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-all z-10">
                   <button
                     type="button"
                     onClick={(e) => openEditModal(e, subject)}
@@ -207,12 +233,12 @@ export default function DashboardPage() {
                   <BookOpen className="h-8 w-8" />
                 </div>
 
-                <h3 className="text-2xl font-black text-brand-taupe mb-3 group-hover:text-brand-teal transition-colors tracking-tight">
+                <h3 className="text-2xl font-black text-brand-taupe mb-3 group-hover:text-brand-teal transition-colors tracking-tight break-words">
                   {subject.name}
                 </h3>
 
                 <div className="flex items-center gap-3 text-sm font-bold text-brand-steel/60">
-                  <span className="bg-brand-blush/20 px-3 py-1 rounded-lg truncate max-w-[200px]">
+                  <span className="bg-brand-blush/20 px-3 py-1 rounded-lg break-words max-w-[200px]">
                     {subject.description || "Sin descripción"}
                   </span>
                   <span className="w-1 h-1 bg-brand-steel/30 rounded-full"></span>
@@ -226,7 +252,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
 
-                <div className="mt-8 flex items-center text-brand-teal font-bold text-sm opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
+                <div className="mt-8 flex items-center text-brand-teal font-bold text-sm sm:opacity-0 sm:group-hover:opacity-100 transition-all sm:translate-x-[-10px] sm:group-hover:translate-x-0">
                   Entrar a estudiar
                 </div>
               </div>
@@ -256,7 +282,7 @@ export default function DashboardPage() {
       {/* react-joyride v3: usar onEvent en lugar de callback, y options.buttons para skip */}
       {isMounted && (
         <Joyride
-          steps={subjectsSteps}
+          steps={steps}
           run={runTour}
           continuous={true}
           onEvent={handleJoyrideEvent}

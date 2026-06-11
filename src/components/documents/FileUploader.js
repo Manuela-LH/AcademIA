@@ -51,13 +51,13 @@ export default function FileUploader({ subjectId, onUploadSuccess }) {
         throw new Error(data.error || "Error en la subida del documento");
       }
 
-      toast.success(`Documento procesado: ${data.chunksCreated} fragmentos creados.`);
+      toast.success(`Documento procesado`);
       setFile(null);
-      
+
       if (onUploadSuccess) {
         onUploadSuccess();
       }
-      
+
       router.refresh(); // Actualiza la lista de documentos en el servidor
     } catch (error) {
       toast.error(error.message);
@@ -69,11 +69,10 @@ export default function FileUploader({ subjectId, onUploadSuccess }) {
   return (
     <div className="bg-white rounded-2xl border border-brand-steel/20 shadow-sm p-4">
       {!file ? (
-        <div 
-          {...getRootProps()} 
-          className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
-            isDragActive ? "border-brand-teal bg-brand-teal/5" : "border-brand-steel/40 hover:bg-brand-blush/5"
-          }`}
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${isDragActive ? "border-brand-teal bg-brand-teal/5" : "border-brand-steel/40 hover:bg-brand-blush/5"
+            }`}
         >
           <input {...getInputProps()} />
           <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-3 ${isDragActive ? "bg-brand-teal/20 text-brand-teal" : "bg-brand-steel/10 text-brand-steel"}`}>
@@ -96,7 +95,7 @@ export default function FileUploader({ subjectId, onUploadSuccess }) {
               <p className="text-sm font-medium text-brand-taupe truncate">{file.name}</p>
               <p className="text-xs text-brand-steel">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
-            <button 
+            <button
               onClick={() => setFile(null)}
               disabled={isUploading}
               className="p-1.5 text-brand-steel hover:text-brand-taupe hover:bg-white rounded-md transition-colors disabled:opacity-50 shrink-0 ml-auto"
@@ -104,7 +103,7 @@ export default function FileUploader({ subjectId, onUploadSuccess }) {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <button 
+          <button
             onClick={handleUpload}
             disabled={isUploading}
             className="w-full bg-brand-teal hover:bg-[#0e4f5c] text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
