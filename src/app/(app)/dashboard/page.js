@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -206,7 +207,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [rawData, setRawData] = useState({ subjects: [], quizzes: [], chatSessions: [] });
   const [selectedSubjectId, setSelectedSubjectId] = useState("all");
-  const [chartWeekOffset, setChartWeekOffset] = useState(0);
+  const [chartMonthOffset, setChartMonthOffset] = useState(0);
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   const subjectDropdownRef = useRef(null);
@@ -231,9 +232,9 @@ export default function DashboardPage() {
     setIsMounted(true);
   }, []);
 
-  // Reset week when subject filter changes
+  // Reset month when subject filter changes
   useEffect(() => {
-    setChartWeekOffset(0);
+    setChartMonthOffset(0);
   }, [selectedSubjectId]);
 
   useEffect(() => {
@@ -336,46 +337,40 @@ export default function DashboardPage() {
   const incorrectPct = totalQA > 0 ? Math.round((totalIncorrect / totalQA) * 100) : 0;
   const globalSuccessRateString = totalQA > 0 ? `${correctPct}% / ${incorrectPct}%` : "0% / 0%";
 
-  // ── Week navigation ───────────────────────────────────────────────────────
-  const weekBounds = useMemo(() => {
+  // ── Month navigation ──────────────────────────────────────────────────────
+  const monthBounds = useMemo(() => {
     const n = new Date();
-    const daysFromMonday = (n.getDay() + 6) % 7;
-    const monday = new Date(n);
-    monday.setDate(n.getDate() - daysFromMonday + chartWeekOffset * 7);
-    monday.setHours(0, 0, 0, 0);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-    return { monday, sunday };
-  }, [chartWeekOffset]);
+    const startOfMonth = new Date(n.getFullYear(), n.getMonth() + chartMonthOffset, 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(n.getFullYear(), n.getMonth() + chartMonthOffset + 1, 0, 23, 59, 59, 999);
+    return { startOfMonth, endOfMonth };
+  }, [chartMonthOffset]);
 
-  const weekLabel = useMemo(() => {
-    const { monday, sunday } = weekBounds;
-    const start = monday.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
-    const end = sunday.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
-    return `${start} – ${end}`;
-  }, [weekBounds]);
+  const monthLabel = useMemo(() => {
+    const { startOfMonth } = monthBounds;
+    const label = startOfMonth.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }, [monthBounds]);
 
-  // ── Week-filtered evolution data ──────────────────────────────────────────
-  const weekEvolutionData = completedQuizzesList
+  // ── Month-filtered evolution data ─────────────────────────────────────────
+  const monthEvolutionData = completedQuizzesList
     .filter(q => {
       const d = new Date(q.completed_at);
-      return d >= weekBounds.monday && d <= weekBounds.sunday;
+      return d >= monthBounds.startOfMonth && d <= monthBounds.endOfMonth;
     })
     .sort((a, b) => new Date(a.completed_at) - new Date(b.completed_at))
     .map(q => ({
       date: new Date(q.completed_at).toLocaleDateString("es-ES", {
-        weekday: "short", day: "numeric", month: "numeric"
+        day: "numeric", month: "numeric"
       }),
       score: Number(q.score),
       name: q.name || "Quiz",
     }));
 
-  // ── Week-filtered comparative data (specific subject view) ────────────────
-  const weekComparativeData = completedQuizzesList
+  // ── Month-filtered comparative data (specific subject view) ───────────────
+  const monthComparativeData = completedQuizzesList
     .filter(q => {
       const d = new Date(q.completed_at);
-      return d >= weekBounds.monday && d <= weekBounds.sunday;
+      return d >= monthBounds.startOfMonth && d <= monthBounds.endOfMonth;
     })
     .sort((a, b) => new Date(a.completed_at) - new Date(b.completed_at))
     .map(q => {
@@ -387,7 +382,7 @@ export default function DashboardPage() {
         ? Math.round(prior.reduce((a, gq) => a + Number(gq.score), 0) / prior.length)
         : 0;
       return {
-        date: qDate.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "numeric" }),
+        date: qDate.toLocaleDateString("es-ES", { day: "numeric", month: "numeric" }),
         subjectScore: Number(q.score),
         generalAverage: runningAvg,
         name: q.name || "Quiz",
@@ -462,36 +457,36 @@ export default function DashboardPage() {
     ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
     : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6";
 
-  // Shared week-navigation UI
-  const weekNavUI = (
+  // Shared month-navigation UI
+  const monthNavUI = (
     <div className="flex items-center gap-2 shrink-0">
       <button
-        onClick={() => setChartWeekOffset(p => p - 1)}
+        onClick={() => setChartMonthOffset(p => p - 1)}
         className="p-1.5 hover:bg-brand-blush/20 rounded-lg transition-colors text-brand-steel hover:text-brand-taupe"
-        title="Semana anterior"
+        title="Mes anterior"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
       <div className="text-center min-w-[170px]">
-        <p className="text-sm font-semibold text-brand-taupe whitespace-nowrap">{weekLabel}</p>
-        {chartWeekOffset === 0 && (
-          <p className="text-[10px] text-brand-teal font-bold">Semana actual</p>
+        <p className="text-sm font-semibold text-brand-taupe whitespace-nowrap">{monthLabel}</p>
+        {chartMonthOffset === 0 && (
+          <p className="text-[10px] text-brand-teal font-bold">Mes actual</p>
         )}
       </div>
       <button
-        onClick={() => setChartWeekOffset(p => p + 1)}
-        disabled={chartWeekOffset >= 0}
+        onClick={() => setChartMonthOffset(p => p + 1)}
+        disabled={chartMonthOffset >= 0}
         className="p-1.5 hover:bg-brand-blush/20 rounded-lg transition-colors text-brand-steel hover:text-brand-taupe disabled:opacity-30 disabled:cursor-not-allowed"
-        title="Semana siguiente"
+        title="Mes siguiente"
       >
         <ChevronRight className="h-4 w-4" />
       </button>
     </div>
   );
 
-  const emptyWeekMsg = (
+  const emptyMonthMsg = (
     <div className="flex items-center justify-center h-full text-brand-steel italic text-center px-4">
-      No hay cuestionarios completados en esta semana.
+      No hay cuestionarios completados en este mes.
     </div>
   );
 
@@ -631,12 +626,12 @@ export default function DashboardPage() {
                 <TrendingUp className="h-6 w-6 text-brand-teal" />
                 <h2 className="text-2xl font-bold text-brand-taupe">Evolución de Puntajes</h2>
               </div>
-              {weekNavUI}
+              {monthNavUI}
             </div>
             <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px]">
-              {weekEvolutionData.length > 0 ? (
+              {monthEvolutionData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={weekEvolutionData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                  <LineChart data={monthEvolutionData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
                     <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 11 }} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 12 }} domain={[0, 100]} dx={-10} />
@@ -644,7 +639,7 @@ export default function DashboardPage() {
                     <Line type="monotone" dataKey="score" name="Puntaje" stroke="#16697A" strokeWidth={3} dot={{ fill: "#16697A", strokeWidth: 2, r: 4 }} activeDot={{ r: 6, fill: "#DB93B0", stroke: "#fff" }} />
                   </LineChart>
                 </ResponsiveContainer>
-              ) : emptyWeekMsg}
+              ) : emptyMonthMsg}
             </div>
           </section>
         ) : (
@@ -653,9 +648,9 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-6 w-6 text-brand-teal" />
-                <h2 className="text-2xl font-bold text-brand-taupe">Puntajes por Semana</h2>
+                <h2 className="text-2xl font-bold text-brand-taupe">Puntajes por Mes</h2>
               </div>
-              {weekNavUI}
+              {monthNavUI}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
@@ -666,9 +661,9 @@ export default function DashboardPage() {
                   <h3 className="text-lg font-bold text-brand-taupe">Evolución de Puntajes</h3>
                 </div>
                 <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px]">
-                  {weekEvolutionData.length > 0 ? (
+                  {monthEvolutionData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={weekEvolutionData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                      <LineChart data={monthEvolutionData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
                         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 11 }} dy={10} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 12 }} domain={[0, 100]} dx={-10} />
@@ -676,7 +671,7 @@ export default function DashboardPage() {
                         <Line type="monotone" dataKey="score" name="Puntaje" stroke={selectedSubjectColor} strokeWidth={3} dot={{ fill: selectedSubjectColor, strokeWidth: 2, r: 4 }} activeDot={{ r: 6, fill: "#DB93B0", stroke: "#fff" }} />
                       </LineChart>
                     </ResponsiveContainer>
-                  ) : emptyWeekMsg}
+                  ) : emptyMonthMsg}
                 </div>
               </div>
 
@@ -687,9 +682,9 @@ export default function DashboardPage() {
                   <h3 className="text-lg font-bold text-brand-taupe">Comparativa vs Promedio General</h3>
                 </div>
                 <div className="bg-white p-6 rounded-2xl border border-brand-steel/10 shadow-sm h-[350px]">
-                  {weekComparativeData.length > 0 ? (
+                  {monthComparativeData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={weekComparativeData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                      <LineChart data={monthComparativeData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#77A0A920" />
                         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 11 }} dy={10} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fill: "#77A0A9", fontSize: 12 }} domain={[0, 100]} dx={-10} />
@@ -699,7 +694,7 @@ export default function DashboardPage() {
                         <Line type="monotone" dataKey="generalAverage" name="Promedio General" stroke="#77A0A9" strokeWidth={2} strokeDasharray="5 5" dot={{ fill: "#77A0A9", strokeWidth: 1, r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
-                  ) : emptyWeekMsg}
+                  ) : emptyMonthMsg}
                 </div>
               </div>
 
